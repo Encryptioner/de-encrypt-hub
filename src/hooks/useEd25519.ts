@@ -293,11 +293,25 @@ export function useEd25519() {
       setProcessingAction(null);
     }
   };
-  
+
   const handleCopy = (text: string) => {
     if (!text) return;
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard!');
+  };
+  
+  const handleDownload = (content: string, fileName: string) => {
+    if (!content) return;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Downloaded as ${fileName}`);
   };
   
   return {
@@ -318,5 +332,6 @@ export function useEd25519() {
     handleCopy,
     handleVerify,
     processingAction,
+    handleDownload,
   }
 }

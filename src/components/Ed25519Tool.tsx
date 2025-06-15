@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, Key, FileText, File, Loader2 } from 'lucide-react';
+import { Copy, Key, FileText, File, Loader2, Download } from 'lucide-react';
 import { Input } from './ui/input';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from './ui/switch';
@@ -28,6 +28,7 @@ export function Ed25519Tool() {
     handleCopy,
     handleVerify,
     processingAction,
+    handleDownload,
   } = useEd25519();
   
   return (
@@ -44,12 +45,18 @@ export function Ed25519Tool() {
           <div className="grid gap-2">
             <Label htmlFor="ed-public-key">Public Key (Base64)</Label>
             <Textarea id="ed-public-key" placeholder='Base64-encoded public key...' value={publicKey} onChange={(e) => setPublicKey(e.target.value)} className="min-h-[120px] resize-y font-mono text-xs" disabled={isProcessing}/>
-            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(publicKey)} disabled={isProcessing || !publicKey}><Copy className="mr-2 h-4 w-4"/> Copy Public Key</Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(publicKey)} disabled={isProcessing || !publicKey}><Copy className="mr-2 h-4 w-4"/> Copy Public Key</Button>
+              <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleDownload(publicKey, 'ed25519_public_key.txt')} disabled={isProcessing || !publicKey}><Download className="mr-2 h-4 w-4"/> Download Key</Button>
+            </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="ed-private-key">Private Key (Base64)</Label>
             <Textarea id="ed-private-key" placeholder='Base64-encoded private key...' value={privateKey} onChange={(e) => setPrivateKey(e.target.value)} className="min-h-[120px] resize-y font-mono text-xs" disabled={isProcessing}/>
-            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(privateKey)} disabled={isProcessing || !privateKey}><Copy className="mr-2 h-4 w-4"/> Copy Private Key</Button>
+             <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(privateKey)} disabled={isProcessing || !privateKey}><Copy className="mr-2 h-4 w-4"/> Copy Private Key</Button>
+              <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleDownload(privateKey, 'ed25519_private_key.txt')} disabled={isProcessing || !privateKey}><Download className="mr-2 h-4 w-4"/> Download Key</Button>
+            </div>
           </div>
         </div>
 
@@ -118,10 +125,16 @@ export function Ed25519Tool() {
         <div className="grid gap-2 pt-4 border-t">
             <div className="flex justify-between items-center">
                 <Label htmlFor="ed-signature">Signature (Base64)</Label>
-                <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard" disabled={!signature}>
-                    <Copy className="w-4 h-4" />
-                    <span className="sr-only">Copy</span>
-                </Button>
+                <div className="flex items-center">
+                  <Button variant="ghost" size="icon" onClick={() => handleDownload(signature, 'ed25519-signature.txt')} title="Download Signature" disabled={!signature}>
+                      <Download className="w-4 h-4" />
+                      <span className="sr-only">Download</span>
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard" disabled={!signature}>
+                      <Copy className="w-4 h-4" />
+                      <span className="sr-only">Copy</span>
+                  </Button>
+                </div>
             </div>
             <Textarea
               id="ed-signature"
