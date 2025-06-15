@@ -5,7 +5,7 @@ export function HeroSection() {
   return (
     <section className="w-full max-w-4xl mx-auto text-center py-12 md:py-16">
       <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-        Secure, Private, Browser-Based Encryption
+        Secure, Private, Browser-Based Encryption & Decryption
       </h2>
       <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
         De-encrypt Hub provides a suite of professional-grade cryptographic tools that work entirely in your browser. Your data never leaves your device.

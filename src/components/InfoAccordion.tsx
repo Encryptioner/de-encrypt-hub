@@ -28,6 +28,60 @@ export function InfoAccordion() {
             </ul>
           </AccordionContent>
         </AccordionItem>
+        <AccordionItem value="supported-formats">
+          <AccordionTrigger className="text-lg font-semibold">Supported Formats & Algorithms</AccordionTrigger>
+          <AccordionContent className="text-muted-foreground space-y-4">
+            <div>
+              <h4 className="font-semibold text-foreground">Input/Output</h4>
+              <p>You can encrypt/decrypt any UTF-8 text. File support for encryption and decryption is planned for a future update.</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground">Keys & Formats</h4>
+              <p>For RSA, we use the JSON Web Key (JWK) format. This is a standard, easy-to-use format. Keys for other algorithms like AES are typically strings or hex values.</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground">Algorithm Comparison</h4>
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b bg-muted/50">
+                    <tr className="text-foreground">
+                      <th className="p-2 font-semibold">Category</th>
+                      <th className="p-2 font-semibold">Algorithms</th>
+                      <th className="p-2 font-semibold">Primary Use Case</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b">
+                      <td className="p-2 font-medium">Symmetric Ciphers</td>
+                      <td className="p-2">AES, DES, TripleDES</td>
+                      <td className="p-2">Encrypting data with a single shared key.</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="p-2 font-medium">Asymmetric Encryption</td>
+                      <td className="p-2">RSA-OAEP</td>
+                      <td className="p-2">Encrypting with a public key, decrypting with a private key.</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="p-2 font-medium">Digital Signatures</td>
+                      <td className="p-2">RSA-PSS, Ed25519</td>
+                      <td className="p-2">Verifying message authenticity and integrity.</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="p-2 font-medium">Hashing</td>
+                      <td className="p-2">SHA-256, SHA-512, MD5</td>
+                      <td className="p-2">Creating a one-way, unique data fingerprint.</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-medium">Token Handling</td>
+                      <td className="p-2">JWT</td>
+                      <td className="p-2">Securely transmitting information between parties.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
         <AccordionItem value="faq">
           <AccordionTrigger className="text-lg font-semibold">Frequently Asked Questions</AccordionTrigger>
           <AccordionContent className="text-muted-foreground space-y-4">

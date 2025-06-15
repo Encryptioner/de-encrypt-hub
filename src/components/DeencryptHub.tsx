@@ -18,14 +18,14 @@ export function DeencryptHub() {
       <CardContent>
         <Tabs defaultValue="encrypt" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="encrypt"><Lock className="mr-2"/>Encrypt / Sign</TabsTrigger>
-            <TabsTrigger value="decrypt"><Unlock className="mr-2"/>Decrypt / Verify</TabsTrigger>
+            <TabsTrigger value="encrypt"><Lock className="mr-2 h-4 w-4"/>Encrypt / Sign</TabsTrigger>
+            <TabsTrigger value="decrypt"><Unlock className="mr-2 h-4 w-4"/>Decrypt / Verify</TabsTrigger>
           </TabsList>
 
           {/* Encryption / Signing Tools */}
           <TabsContent value="encrypt">
             <Tabs defaultValue="ciphers" className="w-full pt-4">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid h-auto w-full grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
                 <TabsTrigger value="ciphers">Ciphers</TabsTrigger>
                 <TabsTrigger value="rsa">RSA</TabsTrigger>
                 <TabsTrigger value="jwt">JWT</TabsTrigger>
@@ -43,7 +43,7 @@ export function DeencryptHub() {
           {/* Decryption / Verification Tools */}
           <TabsContent value="decrypt">
             <Tabs defaultValue="ciphers" className="w-full pt-4">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid h-auto w-full grid-cols-2 gap-2 sm:grid-cols-3">
                 <TabsTrigger value="ciphers">Ciphers</TabsTrigger>
                 <TabsTrigger value="rsa">RSA</TabsTrigger>
                 <TabsTrigger value="jwt">JWT</TabsTrigger>
