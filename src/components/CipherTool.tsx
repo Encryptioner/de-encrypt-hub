@@ -30,9 +30,21 @@ export function CipherTool({ mode }: CipherToolProps) {
     const f = e.target.files?.[0];
     if (f) {
       setFile(f);
-      // We don't set text input here, just hold the file reference
-      toast.success(`File "${f.name}" loaded.`);
       setOutput('');
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const fileContent = event.target?.result;
+        if (typeof fileContent === 'string') {
+          setInput(fileContent);
+          toast.success(`File "${f.name}" loaded.`);
+        } else {
+          toast.error("Failed to read file as text.");
+        }
+      };
+      reader.onerror = () => {
+        toast.error("Error reading file.");
+      };
+      reader.readAsText(f);
     }
   };
   
