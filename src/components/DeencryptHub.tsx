@@ -9,6 +9,9 @@ import { RsaEncryptionTool } from "./RsaEncryptionTool";
 import { Lock, Unlock } from "lucide-react";
 
 export function DeencryptHub() {
+  const level2TabsList = "flex h-auto flex-wrap items-center justify-start gap-4 rounded-none border-b bg-transparent p-0";
+  const level2TabsTrigger = "rounded-none border-b-2 border-transparent bg-transparent px-2 py-2 text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none hover:text-foreground";
+
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-2xl shadow-primary/5 dark:shadow-primary/10">
       <CardHeader>
@@ -25,32 +28,32 @@ export function DeencryptHub() {
           {/* Encryption / Signing Tools */}
           <TabsContent value="encrypt">
             <Tabs defaultValue="ciphers" className="w-full pt-4">
-              <TabsList className="grid h-auto w-full grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
-                <TabsTrigger value="ciphers">Ciphers</TabsTrigger>
-                <TabsTrigger value="rsa">RSA</TabsTrigger>
-                <TabsTrigger value="jwt">JWT</TabsTrigger>
-                <TabsTrigger value="signatures">Digital Signatures</TabsTrigger>
-                <TabsTrigger value="hashing">Hashing</TabsTrigger>
+              <TabsList className={level2TabsList}>
+                <TabsTrigger value="ciphers" className={level2TabsTrigger}>Ciphers</TabsTrigger>
+                <TabsTrigger value="rsa" className={level2TabsTrigger}>RSA</TabsTrigger>
+                <TabsTrigger value="jwt" className={level2TabsTrigger}>JWT</TabsTrigger>
+                <TabsTrigger value="signatures" className={level2TabsTrigger}>Digital Signatures</TabsTrigger>
+                <TabsTrigger value="hashing" className={level2TabsTrigger}>Hashing</TabsTrigger>
               </TabsList>
-              <TabsContent value="ciphers"><CipherTool mode="encrypt" /></TabsContent>
-              <TabsContent value="rsa"><RsaEncryptionTool mode="encrypt" /></TabsContent>
-              <TabsContent value="jwt"><JwtTool mode="encrypt" /></TabsContent>
-              <TabsContent value="signatures"><DigitalSignatureTool /></TabsContent>
-              <TabsContent value="hashing"><HashTool /></TabsContent>
+              <TabsContent value="ciphers" className="pt-6"><CipherTool mode="encrypt" /></TabsContent>
+              <TabsContent value="rsa" className="pt-6"><RsaEncryptionTool mode="encrypt" /></TabsContent>
+              <TabsContent value="jwt" className="pt-6"><JwtTool mode="encrypt" /></TabsContent>
+              <TabsContent value="signatures" className="pt-6"><DigitalSignatureTool /></TabsContent>
+              <TabsContent value="hashing" className="pt-6"><HashTool /></TabsContent>
             </Tabs>
           </TabsContent>
 
           {/* Decryption / Verification Tools */}
           <TabsContent value="decrypt">
             <Tabs defaultValue="ciphers" className="w-full pt-4">
-              <TabsList className="grid h-auto w-full grid-cols-2 gap-2 sm:grid-cols-3">
-                <TabsTrigger value="ciphers">Ciphers</TabsTrigger>
-                <TabsTrigger value="rsa">RSA</TabsTrigger>
-                <TabsTrigger value="jwt">JWT</TabsTrigger>
+              <TabsList className={level2TabsList}>
+                <TabsTrigger value="ciphers" className={level2TabsTrigger}>Ciphers</TabsTrigger>
+                <TabsTrigger value="rsa" className={level2TabsTrigger}>RSA</TabsTrigger>
+                <TabsTrigger value="jwt" className={level2TabsTrigger}>JWT</TabsTrigger>
               </TabsList>
-              <TabsContent value="ciphers"><CipherTool mode="decrypt" /></TabsContent>
-              <TabsContent value="rsa"><RsaEncryptionTool mode="decrypt" /></TabsContent>
-              <TabsContent value="jwt"><JwtTool mode="decrypt" /></TabsContent>
+              <TabsContent value="ciphers" className="pt-6"><CipherTool mode="decrypt" /></TabsContent>
+              <TabsContent value="rsa" className="pt-6"><RsaEncryptionTool mode="decrypt" /></TabsContent>
+              <TabsContent value="jwt" className="pt-6"><JwtTool mode="decrypt" /></TabsContent>
             </Tabs>
           </TabsContent>
         </Tabs>

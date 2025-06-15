@@ -6,7 +6,7 @@ import { RsaTool } from "./RsaTool";
 export function DigitalSignatureTool() {
   return (
     <Tabs defaultValue="rsa" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-auto grid-cols-2 gap-2 mx-auto">
         <TabsTrigger value="rsa">RSA</TabsTrigger>
         <TabsTrigger value="ed25519">Ed25519</TabsTrigger>
       </TabsList>
