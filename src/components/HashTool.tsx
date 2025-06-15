@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { hash, HashAlgorithm } from '@/lib/crypto';
-import { Copy, CheckCircle, XCircle } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 const hashAlgorithms: { name: string; value: HashAlgorithm }[] = [
@@ -20,8 +20,6 @@ export function HashTool() {
   const [input, setInput] = useState('');
   const [algorithm, setAlgorithm] = useState<HashAlgorithm>('SHA-256');
   const [output, setOutput] = useState('');
-  const [hashToVerify, setHashToVerify] = useState('');
-  const [verificationResult, setVerificationResult] = useState<'valid' | 'invalid' | null>(null);
 
   const handleHash = async () => {
     if (!input) {
@@ -31,24 +29,9 @@ export function HashTool() {
     try {
       const result = await hash(input, algorithm);
       setOutput(result);
-      setVerificationResult(null); // Reset verification on new hash
       toast.success('Hashed successfully!');
     } catch (error: any) {
       toast.error(error.message || 'Hashing failed.');
-    }
-  };
-
-  const handleVerify = () => {
-    if (!output || !hashToVerify) {
-      toast.error('Please generate a hash and provide a hash to verify against.');
-      return;
-    }
-    if (output === hashToVerify) {
-      setVerificationResult('valid');
-      toast.success('Hashes match!');
-    } else {
-      setVerificationResult('invalid');
-      toast.error('Hashes do not match.');
     }
   };
 
@@ -70,10 +53,7 @@ export function HashTool() {
             id="hash-input"
             placeholder="Your text to hash..."
             value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              setVerificationResult(null); // Reset verification on input change
-            }}
+            onChange={(e) => setInput(e.target.value)}
             className="min-h-[120px] resize-y"
           />
         </div>
@@ -98,7 +78,7 @@ export function HashTool() {
         </div>
 
         {output && (
-            <div className="grid gap-2 pt-4">
+            <div className="grid gap-2 pt-4 border-t">
             <div className="flex justify-between items-center">
                 <Label htmlFor="hash-output">Generated Hash</Label>
                   <Button variant="ghost" size="icon" onClick={handleCopy} title="Copy to Clipboard">
@@ -114,27 +94,6 @@ export function HashTool() {
             />
             </div>
         )}
-
-        <div className="grid gap-4 pt-4 border-t">
-          <div className="grid gap-2">
-            <Label htmlFor="verify-hash">Verify Hash</Label>
-            <Input 
-              id="verify-hash"
-              placeholder="Paste a hash here to verify..."
-              value={hashToVerify}
-              onChange={(e) => {
-                setHashToVerify(e.target.value);
-                setVerificationResult(null);
-              }}
-              className="font-mono text-sm"
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            <Button onClick={handleVerify} variant="secondary" className="flex-1">Verify</Button>
-            {verificationResult === 'valid' && <CheckCircle className="w-6 h-6 text-green-500" />}
-            {verificationResult === 'invalid' && <XCircle className="w-6 h-6 text-destructive" />}
-          </div>
-        </div>
       </div>
        <p className="text-xs text-muted-foreground w-full text-center pt-6">
         Generate cryptographic hashes. Note that hashing is a one-way process.

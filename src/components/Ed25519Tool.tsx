@@ -31,7 +31,7 @@ function base64ToArrayBuffer(base64: string) {
 export function Ed25519Tool() {
   const [publicKey, setPublicKey] = useState('');
   const [privateKey, setPrivateKey] = useState('');
-  const [message, setMessage] = useState('This is a test message.');
+  const [input, setInput] = useState('This is a test message.');
   const [signature, setSignature] = useState('');
   const [verificationResult, setVerificationResult] = useState<'valid' | 'invalid' | null>(null);
 
@@ -63,7 +63,7 @@ export function Ed25519Tool() {
   };
 
   const handleSign = async () => {
-    if (!message || !privateKey) {
+    if (!input || !privateKey) {
       toast.error('Message and private key are required to sign.');
       return;
     }
@@ -76,7 +76,7 @@ export function Ed25519Tool() {
         true,
         ['sign']
       );
-      const encodedMessage = new TextEncoder().encode(message);
+      const encodedMessage = new TextEncoder().encode(input);
       const sig = await window.crypto.subtle.sign(
         'Ed25519',
         key,
@@ -92,7 +92,7 @@ export function Ed25519Tool() {
   };
 
   const handleVerify = async () => {
-    if (!message || !publicKey || !signature) {
+    if (!input || !publicKey || !signature) {
       toast.error('Message, public key, and signature are required to verify.');
       return;
     }
@@ -106,7 +106,7 @@ export function Ed25519Tool() {
         ['verify']
       );
       const signatureBuffer = base64ToArrayBuffer(signature);
-      const encodedMessage = new TextEncoder().encode(message);
+      const encodedMessage = new TextEncoder().encode(input);
       const isValid = await window.crypto.subtle.verify(
         'Ed25519',
         key,
@@ -156,8 +156,8 @@ export function Ed25519Tool() {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="ed-message">Message</Label>
-          <Textarea id="ed-message" placeholder="The message to sign or verify..." value={message} onChange={(e) => setMessage(e.target.value)} className="min-h-[100px] resize-y" />
+          <Label htmlFor="ed-input">Message</Label>
+          <Textarea id="ed-input" placeholder="The message to sign or verify..." value={input} onChange={(e) => { setInput(e.target.value); setVerificationResult(null); }} className="min-h-[100px] resize-y" />
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
@@ -180,12 +180,12 @@ export function Ed25519Tool() {
         <div className="grid gap-4 pt-4 border-t">
           <Label>Verify Signature</Label>
           <div className="grid gap-2">
-            <Label htmlFor="verify-signature">Signature to Verify</Label>
+            <Label htmlFor="verify-signature-ed">Signature to Verify</Label>
             <Input 
-              id="verify-signature"
+              id="verify-signature-ed"
               placeholder="Paste a signature here to verify..."
               value={signature}
-              onChange={(e) => setSignature(e.target.value)}
+              onChange={(e) => { setSignature(e.target.value); setVerificationResult(null); }}
               className="font-mono text-sm"
             />
           </div>

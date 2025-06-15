@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
-import { Copy, Key, RefreshCw } from 'lucide-react';
+import { Copy, Key, CheckCircle, XCircle } from 'lucide-react';
+import { Input } from './ui/input';
 
 // Helper to convert ArrayBuffer to Base64
 function arrayBufferToBase64(buffer: ArrayBuffer) {
   let binary = '';
   const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
+  for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
   return window.btoa(binary);
@@ -31,20 +31,21 @@ function base64ToArrayBuffer(base64: string) {
 export function RsaTool() {
   const [publicKey, setPublicKey] = useState('');
   const [privateKey, setPrivateKey] = useState('');
-  const [input, setInput] = useState('My secret message');
-  const [output, setOutput] = useState('');
+  const [input, setInput] = useState('This is a test message.');
+  const [signature, setSignature] = useState('');
+  const [verificationResult, setVerificationResult] = useState<'valid' | 'invalid' | null>(null);
 
   const handleGenerateKeys = async () => {
     try {
       const keyPair = await window.crypto.subtle.generateKey(
         {
-          name: 'RSA-OAEP',
+          name: 'RSA-PSS',
           modulusLength: 2048,
           publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
           hash: 'SHA-256',
         },
         true,
-        ['encrypt', 'decrypt']
+        ['sign', 'verify']
       );
       
       const publicKeyJwk = await window.crypto.subtle.exportKey('jwk', keyPair.publicKey);
@@ -52,6 +53,8 @@ export function RsaTool() {
 
       setPublicKey(JSON.stringify(publicKeyJwk, null, 2));
       setPrivateKey(JSON.stringify(privateKeyJwk, null, 2));
+      setSignature('');
+      setVerificationResult(null);
       toast.success('RSA key pair generated successfully!');
     } catch (error) {
       toast.error('Failed to generate keys.');
@@ -59,37 +62,9 @@ export function RsaTool() {
     }
   };
 
-  const handleEncrypt = async () => {
-    if (!input || !publicKey) {
-      toast.error('Input text and public key are required.');
-      return;
-    }
-    try {
-      const publicKeyJwk = JSON.parse(publicKey);
-      const key = await window.crypto.subtle.importKey(
-        'jwk',
-        publicKeyJwk,
-        { name: 'RSA-OAEP', hash: 'SHA-256' },
-        true,
-        ['encrypt']
-      );
-      const encodedInput = new TextEncoder().encode(input);
-      const encrypted = await window.crypto.subtle.encrypt(
-        { name: 'RSA-OAEP' },
-        key,
-        encodedInput
-      );
-      setOutput(arrayBufferToBase64(encrypted));
-      toast.success('Encrypted successfully!');
-    } catch (error) {
-      toast.error('Encryption failed. Ensure the public key is correct.');
-      console.error(error);
-    }
-  };
-
-  const handleDecrypt = async () => {
+  const handleSign = async () => {
     if (!input || !privateKey) {
-      toast.error('Input ciphertext and private key are required.');
+      toast.error('Input message and private key are required.');
       return;
     }
     try {
@@ -97,20 +72,56 @@ export function RsaTool() {
       const key = await window.crypto.subtle.importKey(
         'jwk',
         privateKeyJwk,
-        { name: 'RSA-OAEP', hash: 'SHA-256' },
+        { name: 'RSA-PSS', hash: 'SHA-256' },
         true,
-        ['decrypt']
+        ['sign']
       );
-      const encryptedBuffer = base64ToArrayBuffer(input);
-      const decrypted = await window.crypto.subtle.decrypt(
-        { name: 'RSA-OAEP' },
+      const encodedInput = new TextEncoder().encode(input);
+      const sig = await window.crypto.subtle.sign(
+        { name: 'RSA-PSS', saltLength: 32 },
         key,
-        encryptedBuffer
+        encodedInput
       );
-      setOutput(new TextDecoder().decode(decrypted));
-      toast.success('Decrypted successfully!');
+      setSignature(arrayBufferToBase64(sig));
+      setVerificationResult(null);
+      toast.success('Message signed successfully!');
     } catch (error) {
-      toast.error('Decryption failed. Check the private key or ciphertext.');
+      toast.error('Signing failed. Ensure the private key is correct.');
+      console.error(error);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!input || !publicKey || !signature) {
+      toast.error('Message, public key, and signature are required to verify.');
+      return;
+    }
+    try {
+      const publicKeyJwk = JSON.parse(publicKey);
+      const key = await window.crypto.subtle.importKey(
+        'jwk',
+        publicKeyJwk,
+        { name: 'RSA-PSS', hash: 'SHA-256' },
+        true,
+        ['verify']
+      );
+      const signatureBuffer = base64ToArrayBuffer(signature);
+      const encodedInput = new TextEncoder().encode(input);
+      const isValid = await window.crypto.subtle.verify(
+        { name: 'RSA-PSS', saltLength: 32 },
+        key,
+        signatureBuffer,
+        encodedInput
+      );
+      setVerificationResult(isValid ? 'valid' : 'invalid');
+      if (isValid) {
+        toast.success('Signature is valid!');
+      } else {
+        toast.error('Signature is invalid!');
+      }
+    } catch (error) {
+      setVerificationResult('invalid');
+      toast.error('Verification failed. Check the public key, message, or signature format.');
       console.error(error);
     }
   };
@@ -120,15 +131,6 @@ export function RsaTool() {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard!');
   };
-
-  const handleSwap = () => {
-    if (!output) {
-        toast.error('Nothing to use as input.');
-        return;
-    }
-    setInput(output);
-    setOutput('');
-  }
 
   return (
     <>
@@ -158,36 +160,48 @@ export function RsaTool() {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="rsa-input">Input (Plaintext / Ciphertext)</Label>
-          <Textarea id="rsa-input" placeholder="Your secret message or Base64 ciphertext..." value={input} onChange={(e) => setInput(e.target.value)} className="min-h-[120px] resize-y" />
+          <Label htmlFor="rsa-input">Message</Label>
+          <Textarea id="rsa-input" placeholder="The message to sign or verify..." value={input} onChange={(e) => { setInput(e.target.value); setVerificationResult(null); }} className="min-h-[120px] resize-y" />
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4">
-          <Button onClick={handleEncrypt} className="flex-1">Encrypt with Public Key</Button>
-          <Button onClick={handleDecrypt} className="flex-1" variant="secondary">Decrypt with Private Key</Button>
+          <Button onClick={handleSign} className="flex-1">Sign with Private Key</Button>
         </div>
 
-        {output && (
+        {signature && (
           <div className="grid gap-2 pt-4">
             <div className="flex justify-between items-center">
-                <Label htmlFor="rsa-output">Result</Label>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="icon" onClick={handleSwap} title="Use as Input">
-                    <RefreshCw className="w-4 h-4" />
-                    <span className="sr-only">Use as Input</span>
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleCopy(output)} title="Copy to Clipboard">
+                <Label htmlFor="rsa-signature">Generated Signature (Base64)</Label>
+                <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard">
                     <Copy className="w-4 h-4" />
                     <span className="sr-only">Copy</span>
-                  </Button>
-                </div>
+                </Button>
             </div>
-            <Textarea id="rsa-output" readOnly value={output} className="min-h-[120px] resize-y bg-muted/50" />
+            <Textarea id="rsa-signature" readOnly value={signature} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
           </div>
         )}
+        
+        <div className="grid gap-4 pt-4 border-t">
+          <Label>Verify Signature</Label>
+          <div className="grid gap-2">
+            <Label htmlFor="verify-signature-rsa">Signature to Verify</Label>
+            <Input 
+              id="verify-signature-rsa"
+              placeholder="Paste a signature here to verify..."
+              value={signature}
+              onChange={(e) => { setSignature(e.target.value); setVerificationResult(null); }}
+              className="font-mono text-sm"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <Button onClick={handleVerify} variant="secondary" className="flex-1">Verify</Button>
+            {verificationResult === 'valid' && <CheckCircle className="w-6 h-6 text-green-500" />}
+            {verificationResult === 'invalid' && <XCircle className="w-6 h-6 text-destructive" />}
+          </div>
+        </div>
       </div>
        <p className="text-xs text-muted-foreground w-full text-center pt-6">
-        Uses RSA-OAEP with SHA-256 padding. Keys are in JSON Web Key (JWK) format.
+        Uses RSA-PSS with SHA-256 for signatures. Keys are in JSON Web Key (JWK) format.
       </p>
     </>
   );
