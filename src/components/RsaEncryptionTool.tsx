@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,7 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { arrayBufferToBase64, base64ToArrayBuffer } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-export function RsaEncryptionTool() {
+interface RsaEncryptionToolProps {
+  mode: 'encrypt' | 'decrypt';
+}
+
+export function RsaEncryptionTool({ mode }: RsaEncryptionToolProps) {
   const [publicKey, setPublicKey] = useState('');
   const [privateKey, setPrivateKey] = useState('');
   
@@ -137,7 +140,28 @@ export function RsaEncryptionTool() {
     toast.success('Copied to clipboard!');
   };
 
-  const handleDownload = (url: string, filename: string) => {
+  const handleDownload = (data: string, filename: string) => {
+    if (!data) return;
+    
+    let blob: Blob;
+    try {
+      const buffer = base64ToArrayBuffer(data);
+      blob = new Blob([buffer]);
+    } catch (e) {
+      blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadDecrypted = (url: string, filename: string) => {
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
@@ -181,45 +205,55 @@ export function RsaEncryptionTool() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="grid gap-2">
-                    <Label>Data to Encrypt/Decrypt</Label>
-                    <Tabs defaultValue="text" className="w-full" onValueChange={(value) => setCryptInputType(value as 'text' | 'file')}>
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="text"><FileText className="mr-2 h-4 w-4" />Text Input</TabsTrigger>
-                            <TabsTrigger value="file"><FileIcon className="mr-2 h-4 w-4" />File Input</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="text" className="pt-2">
-                            <Textarea placeholder="Your secret message..." value={cryptTextInput} onChange={(e) => setCryptTextInput(e.target.value)} className="min-h-[120px] resize-y" />
-                        </TabsContent>
-                        <TabsContent value="file" className="pt-2">
-                            <div className="grid gap-2">
-                                <Input type="file" onChange={handleCryptFileChange} />
-                                {cryptFile && <p className="text-sm text-muted-foreground">Selected: {cryptFile.name} ({(cryptFile.size / 1024).toFixed(2)} KB)</p>}
-                            </div>
-                        </TabsContent>
-                    </Tabs>
+                    <Label>{mode === 'encrypt' ? 'Data to Encrypt' : 'Data to Decrypt'}</Label>
+                    {mode === 'encrypt' ? (
+                        <Tabs defaultValue="text" className="w-full" onValueChange={(value) => setCryptInputType(value as 'text' | 'file')}>
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="text"><FileText className="mr-2 h-4 w-4" />Text Input</TabsTrigger>
+                                <TabsTrigger value="file"><FileIcon className="mr-2 h-4 w-4" />File Input</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="text" className="pt-2">
+                                <Textarea placeholder="Your secret message..." value={cryptTextInput} onChange={(e) => setCryptTextInput(e.target.value)} className="min-h-[120px] resize-y" />
+                            </TabsContent>
+                            <TabsContent value="file" className="pt-2">
+                                <div className="grid gap-2">
+                                    <Input type="file" onChange={handleCryptFileChange} />
+                                    {cryptFile && <p className="text-sm text-muted-foreground">Selected: {cryptFile.name} ({(cryptFile.size / 1024).toFixed(2)} KB)</p>}
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    ) : (
+                        <Textarea id="rsa-encrypted-input" placeholder="Paste your Base64 encrypted data here..." value={encryptedData} onChange={(e) => setEncryptedData(e.target.value)} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
+                    )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
+                  {mode === 'encrypt' ? (
                     <Button onClick={handleEncrypt} className="flex-1"><Lock className="mr-2"/>Encrypt with Public Key</Button>
+                  ) : (
                     <Button onClick={handleDecrypt} className="flex-1" variant="secondary"><Unlock className="mr-2"/>Decrypt with Private Key</Button>
+                  )}
                 </div>
 
-                {encryptedData && (
+                {mode === 'encrypt' && encryptedData && (
                     <div className="grid gap-2 pt-4 border-t">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="rsa-encrypted">Encrypted Data (Base64)</Label>
-                            <Button variant="ghost" size="icon" onClick={() => handleCopy(encryptedData)} title="Copy to Clipboard"><Copy className="w-4 h-4" /></Button>
+                            <div>
+                                <Button variant="ghost" size="icon" onClick={() => handleDownload(encryptedData, 'encrypted.bin')} title="Download Encrypted Data"><Download className="w-4 h-4" /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleCopy(encryptedData)} title="Copy to Clipboard"><Copy className="w-4 h-4" /></Button>
+                            </div>
                         </div>
                         <Textarea id="rsa-encrypted" readOnly value={encryptedData} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
                     </div>
                 )}
                 
-                {(decryptedData || decryptedFileUrl) && (
+                {mode === 'decrypt' && (decryptedData || decryptedFileUrl) && (
                     <div className="grid gap-2 pt-4 border-t">
                          <div className="flex justify-between items-center">
                             <Label>Decrypted Data</Label>
                             {decryptedFileUrl && (
-                                <Button variant="ghost" size="icon" onClick={() => handleDownload(decryptedFileUrl, `decrypted-${cryptFile?.name || 'file'}`)} title="Download Decrypted File">
+                                <Button variant="ghost" size="icon" onClick={() => handleDownloadDecrypted(decryptedFileUrl, `decrypted-${cryptFile?.name || 'file'}`)} title="Download Decrypted File">
                                     <Download className="w-4 h-4" />
                                 </Button>
                             )}

@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 import { EncryptJWT, jwtDecrypt } from 'jose';
-import { Copy, RefreshCw } from 'lucide-react';
+import { Copy, RefreshCw, Download } from 'lucide-react';
 
 /**
  * Derives a 256-bit key from a secret string using SHA-256.
@@ -17,7 +17,11 @@ const getDerivedKey = async (secret: string): Promise<Uint8Array> => {
   return new Uint8Array(secretHash);
 };
 
-export function JwtTool() {
+interface JwtToolProps {
+  mode: 'encrypt' | 'decrypt';
+}
+
+export function JwtTool({ mode }: JwtToolProps) {
   const [input, setInput] = useState('{\n  "message": "Hello from Lovable!"\n}');
   const [secret, setSecret] = useState('');
   const [output, setOutput] = useState('');
@@ -73,6 +77,26 @@ export function JwtTool() {
     toast.success('Result copied to clipboard!');
   };
 
+  const handleDownload = () => {
+    if (!output) {
+      toast.error('Nothing to download.');
+      return;
+    }
+    
+    const blob = new Blob([output], { type: 'text/plain;charset=utf-8' });
+    const filename = mode === 'encrypt' ? 'encrypted.jwe' : 'decrypted.json';
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Download started.');
+  };
+
   const handleSwap = () => {
     if (!output) {
         toast.error('Nothing to use as input.');
@@ -86,7 +110,7 @@ export function JwtTool() {
     <>
       <div className="space-y-6 pt-4">
         <div className="grid gap-2">
-          <Label htmlFor="jwt-input">Payload (JSON) / JWE</Label>
+          <Label htmlFor="jwt-input">{mode === 'encrypt' ? 'Payload (JSON)' : 'JWE Token'}</Label>
           <Textarea
             id="jwt-input"
             placeholder='{ "data": "your_json_payload" } or a JWE token...'
@@ -106,8 +130,11 @@ export function JwtTool() {
           />
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
-            <Button onClick={handleEncrypt} className="flex-1">Encrypt JWT</Button>
-            <Button onClick={handleDecrypt} className="flex-1" variant="secondary">Decrypt JWT</Button>
+            {mode === 'encrypt' ? (
+              <Button onClick={handleEncrypt} className="flex-1">Encrypt JWT</Button>
+            ) : (
+              <Button onClick={handleDecrypt} className="flex-1" variant="secondary">Decrypt JWT</Button>
+            )}
         </div>
 
         {output && (
@@ -115,6 +142,10 @@ export function JwtTool() {
             <div className="flex justify-between items-center">
                 <Label htmlFor="jwt-output">Result</Label>
                 <div className="flex gap-2">
+                  <Button variant="ghost" size="icon" onClick={handleDownload} title="Download Result">
+                    <Download className="w-4 h-4" />
+                    <span className="sr-only">Download</span>
+                  </Button>
                   <Button variant="ghost" size="icon" onClick={handleSwap} title="Use as Input">
                     <RefreshCw className="w-4 h-4" />
                     <span className="sr-only">Use as Input</span>

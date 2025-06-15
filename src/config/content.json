@@ -1,7 +1,7 @@
 
 {
-  "title": "Encryptify",
-  "subtitle": "Secure your messages with modern encryption algorithms. Fast, simple, and secure.",
+  "title": "CryptoKit",
+  "subtitle": "A versatile toolkit for encryption, decryption, signing, and hashing.",
   "algorithms": [
     { "name": "AES", "value": "AES", "description": "Advanced Encryption Standard - A widely used symmetric encryption algorithm." },
     { "name": "DES", "value": "DES", "description": "Data Encryption Standard - An older symmetric-key algorithm." },

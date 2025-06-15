@@ -1,10 +1,9 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
-import { Copy, Key, FileText, File as FileIcon } from 'lucide-react';
+import { Copy, Key, FileText, File as FileIcon, Download } from 'lucide-react';
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { arrayBufferToBase64 } from '@/lib/utils';
@@ -119,6 +118,23 @@ export function RsaTool() {
     toast.success('Copied to clipboard!');
   };
 
+  const handleDownloadSignature = () => {
+    if (!signature) {
+        toast.error('Nothing to download.');
+        return;
+    }
+    const blob = new Blob([signature], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'signature.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Signature download started.');
+  };
+
   return (
     <>
       <div className="space-y-6 pt-4">
@@ -184,10 +200,16 @@ export function RsaTool() {
                     <div className="grid gap-2 pt-4 border-t">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="rsa-signature">Generated Signature (Base64)</Label>
-                            <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard">
-                                <Copy className="w-4 h-4" />
-                                <span className="sr-only">Copy</span>
-                            </Button>
+                            <div>
+                                <Button variant="ghost" size="icon" onClick={handleDownloadSignature} title="Download Signature">
+                                    <Download className="w-4 h-4" />
+                                    <span className="sr-only">Download</span>
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard">
+                                    <Copy className="w-4 h-4" />
+                                    <span className="sr-only">Copy</span>
+                                </Button>
+                            </div>
                         </div>
                         <Textarea id="rsa-signature" readOnly value={signature} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
                     </div>

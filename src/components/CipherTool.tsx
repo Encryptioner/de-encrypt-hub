@@ -14,7 +14,11 @@ import content from '@/config/content.json';
 
 type Algorithm = 'AES' | 'DES' | 'TripleDES' | 'Rabbit' | 'RC4' | 'RC4Drop';
 
-export function CipherTool() {
+interface CipherToolProps {
+  mode: 'encrypt' | 'decrypt';
+}
+
+export function CipherTool({ mode }: CipherToolProps) {
   const [inputType, setInputType] = useState<'text' | 'file'>('text');
   const [input, setInput] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -187,8 +191,11 @@ export function CipherTool() {
             </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
-            <Button onClick={handleEncrypt} className="flex-1">Encrypt</Button>
-            <Button onClick={handleDecrypt} className="flex-1" variant="secondary">Decrypt</Button>
+            {mode === 'encrypt' ? (
+                <Button onClick={handleEncrypt} className="flex-1">Encrypt</Button>
+            ) : (
+                <Button onClick={handleDecrypt} className="flex-1" variant="secondary">Decrypt</Button>
+            )}
         </div>
 
         {output && (
