@@ -85,6 +85,8 @@ export function useCipher({ mode }: UseCipherProps) {
 
     const initialSteps: VisualizationStep[] = stepsConfig.map(s => ({ ...s, data: '', status: 'pending' }));
     
+    setVisualizationSteps(initialSteps); // FIX: Initialize the steps array.
+
     for (let i = 0; i < initialSteps.length; i++) {
         await new Promise(res => setTimeout(res, 100));
         setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'processing', data: '...' } : s)));
@@ -140,6 +142,8 @@ export function useCipher({ mode }: UseCipherProps) {
     }
     
     const initialSteps: VisualizationStep[] = stepsConfig.map(s => ({ ...s, data: '', status: 'pending' }));
+    
+    setVisualizationSteps(initialSteps); // FIX: Initialize the steps array here as well.
     
     for (let i = 0; i < initialSteps.length; i++) {
         await new Promise(res => setTimeout(res, 100));
