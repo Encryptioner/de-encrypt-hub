@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +9,8 @@ import { useImageCipher } from '@/hooks/useImageCipher';
 import { ImageAlgorithm } from '@/lib/imageEncryption';
 import content from '@/config/content.json';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { CipherVisualization } from '@/components/CipherVisualization';
 
 interface ImageCipherToolProps {
   mode: 'encrypt' | 'decrypt';
@@ -23,6 +24,8 @@ export function ImageCipherTool({ mode }: ImageCipherToolProps) {
     algorithm, setAlgorithm,
     isProcessing,
     progress,
+    showSteps, setShowSteps,
+    visualizationSteps,
     handleImageUpload,
     handleProcess,
     handleDownload,
@@ -152,6 +155,19 @@ export function ImageCipherTool({ mode }: ImageCipherToolProps) {
               </Select>
             </div>
           </div>
+
+          <div className="flex items-center space-x-2 rounded-lg border p-4">
+            <Switch
+              id="image-slow-mode-switch"
+              checked={showSteps}
+              onCheckedChange={setShowSteps}
+              disabled={isProcessing}
+            />
+            <Label htmlFor="image-slow-mode-switch" className="flex flex-col">
+              Show Step-by-Step Visualization
+            </Label>
+          </div>
+
           <div className="flex flex-wrap gap-4 pt-2">
             <Button onClick={handleProcess} disabled={isProcessing || !key} className="flex-1 min-w-[180px]">
               {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (mode === 'encrypt' ? <Lock className="mr-2 h-4 w-4"/> : <Unlock className="mr-2 h-4 w-4"/>)}
@@ -166,6 +182,14 @@ export function ImageCipherTool({ mode }: ImageCipherToolProps) {
               <RefreshCw className="mr-2 h-4 w-4" /> Reset
             </Button>
           </div>
+          
+          {showSteps && visualizationSteps.length > 0 && (
+            <CipherVisualization
+                steps={visualizationSteps}
+                principle={(content.imageAlgorithms || []).find(a => a.value === algorithm)?.description}
+            />
+          )}
+
           <p className="text-xs text-muted-foreground w-full text-center pt-2">{(content.imageAlgorithms || []).find(a => a.value === algorithm)?.description}</p>
         </div>
       )}

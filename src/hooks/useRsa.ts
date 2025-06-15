@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { type VisualizationStep } from '@/hooks/useCipher';
 import { arrayBufferToBase64, base64ToArrayBuffer } from '@/lib/utils';
-import content from '@/config/content.json';
 
 export function useRsa() {
     // Key State
@@ -49,7 +48,20 @@ export function useRsa() {
         setOutput('');
         setVisualizationSteps([]);
 
-        const stepsConfig = mode === 'encrypt' ? content.rsa.encryptionSteps : content.rsa.decryptionSteps;
+        const encryptionSteps = [
+            { title: '1. Load Public Key', explanation: 'The public key, which can be shared freely, is loaded. It contains the mathematical components needed to encrypt data, but not to decrypt it.' },
+            { title: '2. Prepare Data (OAEP Padding)', explanation: 'The message is prepared with a special, random padding (OAEP). This enhances security by preventing attacks based on predictable message formats.' },
+            { title: '3. Encrypt with Public Key', explanation: 'The padded message is mathematically transformed using the public key. This process is a "one-way street"; the data can now only be decrypted by the corresponding private key.' },
+            { title: '4. Final Ciphertext', explanation: 'The result is the Base64 encoded ciphertext, ready to be sent securely.' },
+        ];
+        const decryptionSteps = [
+            { title: '1. Load Private Key', explanation: 'The private key, which must be kept secret, is loaded. It contains the unique mathematical components required to reverse the encryption.' },
+            { title: '2. Decrypt with Private Key', explanation: 'The ciphertext is mathematically transformed using the private key. Only the correct private key can successfully reverse the public key\'s encryption.' },
+            { title: '3. Remove Padding', explanation: 'The random OAEP padding that was added during encryption is now removed, leaving only the original data.' },
+            { title: '4. Final Plaintext', explanation: 'The original message is recovered.' },
+        ];
+
+        const stepsConfig = mode === 'encrypt' ? encryptionSteps : decryptionSteps;
         let currentData = data.substring(0, 64) + (data.length > 64 ? '...' : '');
 
         const initialSteps: VisualizationStep[] = stepsConfig.map(s => ({

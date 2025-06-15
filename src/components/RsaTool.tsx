@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,6 +8,9 @@ import { Input } from './ui/input';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { arrayBufferToBase64 } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Switch } from './ui/switch';
+import { CipherVisualization } from './CipherVisualization';
+import { type VisualizationStep } from '@/hooks/useCipher';
 
 
 export function RsaTool() {
@@ -23,9 +25,11 @@ export function RsaTool() {
   const [signature, setSignature] = React.useState('');
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [animatedSignature, setAnimatedSignature] = React.useState('');
+  const [showSteps, setShowSteps] = React.useState(false);
+  const [visualizationSteps, setVisualizationSteps] = React.useState<VisualizationStep[]>([]);
 
   React.useEffect(() => {
-    if (isProcessing) {
+    if (isProcessing && !showSteps) {
       const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
       const interval = setInterval(() => {
         let result = '';
@@ -37,7 +41,7 @@ export function RsaTool() {
 
       return () => clearInterval(interval);
     }
-  }, [isProcessing]);
+  }, [isProcessing, showSteps]);
 
   const handleGenerateKeys = async () => {
     try {
@@ -87,6 +91,54 @@ export function RsaTool() {
     }
   };
 
+  const runSlowSign = async (dataToSign: ArrayBuffer) => {
+    setIsProcessing(true);
+    setSignature('');
+    setVisualizationSteps([]);
+
+    const steps = [
+        { title: '1. Hash Data (SHA-256)', explanation: 'First, the input data is processed by the SHA-256 hash function. This creates a unique, fixed-size "fingerprint" of the data. Any change to the original data, no matter how small, will result in a completely different hash.' },
+        { title: '2. Sign Hash with Private Key', explanation: 'The generated hash (not the original data) is then encrypted using your secret private key and the RSA-PSS padding scheme. Only this specific private key can create this signature, proving you are the author.' },
+        { title: '3. Final Signature', explanation: 'The output is the Base64 encoded digital signature. This can be published alongside the original data. Anyone with your public key can use it to verify that the data came from you and has not been tampered with.' },
+    ];
+    
+    const initialSteps: VisualizationStep[] = steps.map(s => ({ ...s, data: '', status: 'pending' }));
+    setVisualizationSteps(initialSteps);
+    
+    try {
+        // Step 1
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 0 ? { ...s, status: 'processing' } : s));
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', dataToSign);
+        const hashBase64 = arrayBufferToBase64(hashBuffer);
+        await new Promise(res => setTimeout(res, 800));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 0 ? { ...s, status: 'done', data: `Hash: ${hashBase64.substring(0, 44)}...` } : s));
+        
+        // Step 2
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 1 ? { ...s, status: 'processing' } : s));
+        const privateKeyJwk = JSON.parse(privateKey);
+        const key = await window.crypto.subtle.importKey('jwk', privateKeyJwk, { name: 'RSA-PSS', hash: 'SHA-256' }, true, ['sign']);
+        const sigBuffer = await window.crypto.subtle.sign({ name: 'RSA-PSS', saltLength: 32 }, key, dataToSign);
+        const finalSignature = arrayBufferToBase64(sigBuffer);
+        await new Promise(res => setTimeout(res, 800));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 1 ? { ...s, status: 'done', data: 'Hash successfully signed with private key.' } : s));
+
+        // Step 3
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 2 ? { ...s, status: 'processing' } : s));
+        await new Promise(res => setTimeout(res, 800));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 2 ? { ...s, status: 'done', data: finalSignature } : s));
+        
+        setSignature(finalSignature);
+        toast.success('Slow-mode signing complete!');
+    } catch (e: any) {
+        toast.error('Signing failed. Ensure the private key is correct.');
+    } finally {
+        setIsProcessing(false);
+    }
+  };
+
   const handleSign = async () => {
     if (!privateKey) {
       toast.error('Private key is required to sign.');
@@ -108,6 +160,11 @@ export function RsaTool() {
       dataToSign = signFileBuffer;
     }
     
+    if (showSteps) {
+        runSlowSign(dataToSign);
+        return;
+    }
+
     setIsProcessing(true);
     setSignature('');
     try {
@@ -229,11 +286,27 @@ export function RsaTool() {
                         </div>
                     )}
                 </div>
+
+                <div className="flex items-center space-x-2 rounded-lg border p-4">
+                    <Switch id="rsa-slow-mode" checked={showSteps} onCheckedChange={setShowSteps} disabled={isProcessing} />
+                    <Label htmlFor="rsa-slow-mode">Show Step-by-Step Visualization</Label>
+                </div>
+                
                 <Button onClick={handleSign} className="w-full" disabled={isProcessing || !privateKey}>
                     {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isProcessing ? 'Signing...' : 'Sign with Private Key'}
                 </Button>
-                {(signature || isProcessing) && (
+
+                {showSteps && visualizationSteps.length > 0 && (
+                  <div className="pt-4 border-t">
+                    <CipherVisualization
+                      steps={visualizationSteps}
+                      principle="RSA-PSS is a signature scheme that provides stronger security guarantees than older methods. It involves hashing the data and then encrypting that hash with a private key."
+                    />
+                  </div>
+                )}
+
+                {(signature || (isProcessing && !showSteps)) && (
                     <div className="grid gap-2 pt-4 border-t">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="rsa-signature">Generated Signature (Base64)</Label>
@@ -248,7 +321,7 @@ export function RsaTool() {
                                 </Button>
                             </div>
                         </div>
-                        <Textarea id="rsa-signature" readOnly value={isProcessing ? animatedSignature : signature} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
+                        <Textarea id="rsa-signature" readOnly value={isProcessing && !showSteps ? animatedSignature : signature} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
                     </div>
                 )}
             </CardContent>

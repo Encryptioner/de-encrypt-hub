@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,9 @@ import { toast } from 'sonner';
 import { EncryptJWT, jwtDecrypt } from 'jose';
 import { Copy, RefreshCw, Download, FileText, File as FileIcon, Loader2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { Switch } from './ui/switch';
+import { CipherVisualization } from './CipherVisualization';
+import { type VisualizationStep } from '@/hooks/useCipher';
 
 /**
  * Derives a 256-bit key from a secret string using SHA-256.
@@ -31,9 +33,11 @@ export function JwtTool({ mode }: JwtToolProps) {
   const [decryptFile, setDecryptFile] = React.useState<globalThis.File | null>(null);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [animatedOutput, setAnimatedOutput] = React.useState('');
+  const [showSteps, setShowSteps] = React.useState(false);
+  const [visualizationSteps, setVisualizationSteps] = React.useState<VisualizationStep[]>([]);
 
   React.useEffect(() => {
-    if (isProcessing && input) {
+    if (isProcessing && input && !showSteps) {
       const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-';
       const interval = setInterval(() => {
         let result = '';
@@ -46,10 +50,127 @@ export function JwtTool({ mode }: JwtToolProps) {
 
       return () => clearInterval(interval);
     }
-  }, [isProcessing, input, mode]);
+  }, [isProcessing, input, mode, showSteps]);
 
+  const runSlowEncrypt = async () => {
+    if (!input || !secret) {
+      toast.error('Payload and secret key cannot be empty.');
+      return;
+    }
+    let payload;
+    try { payload = JSON.parse(input); } catch (e) { toast.error('Invalid JSON payload.'); return; }
+    
+    setIsProcessing(true);
+    setOutput('');
+    setVisualizationSteps([]);
+
+    const steps = [
+        { title: '1. Prepare JWE Header', explanation: 'A standard header is created specifying the encryption algorithm (`dir` for direct key usage) and content encryption method (`A256GCM`). This part is not secret and is encoded in Base64.' },
+        { title: '2. Derive Encryption Key', explanation: 'The provided secret is securely hashed using SHA-256 to create a 256-bit key. This derived key is what actually encrypts the data. It ensures your original secret is never used directly and the key is the correct size.' },
+        { title: '3. Encrypt Payload', explanation: 'The JSON payload is encrypted using the derived key and the A256GCM algorithm. This turns your readable data into unreadable ciphertext.' },
+        { title: '4. Assemble JWE', explanation: 'The Base64-encoded header, encrypted key (empty for `dir`), initialization vector (IV), ciphertext, and authentication tag are combined into the final compact JWE string.' }
+    ];
+
+    const initialSteps: VisualizationStep[] = steps.map(s => ({ ...s, data: '', status: 'pending' }));
+    setVisualizationSteps(initialSteps);
+
+    try {
+        const header = { alg: 'dir', enc: 'A256GCM' };
+        // Step 1
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 0 ? { ...s, status: 'processing' } : s));
+        await new Promise(res => setTimeout(res, 800));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 0 ? { ...s, status: 'done', data: JSON.stringify(header, null, 2) } : s));
+
+        // Step 2
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 1 ? { ...s, status: 'processing' } : s));
+        const derivedKey = await getDerivedKey(secret);
+        await new Promise(res => setTimeout(res, 800));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 1 ? { ...s, status: 'done', data: 'Key derived successfully (not displayed for security).' } : s));
+
+        // Step 3 & 4
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => (i === 2 || i === 3) ? { ...s, status: 'processing' } : s));
+        
+        const jwe = await new EncryptJWT(payload).setProtectedHeader(header).setIssuedAt().encrypt(derivedKey);
+
+        await new Promise(res => setTimeout(res, 800));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 2 ? { ...s, status: 'done', data: 'Payload is now encrypted ciphertext (not shown).' } : s));
+        
+        await new Promise(res => setTimeout(res, 500));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 3 ? { ...s, status: 'done', data: jwe } : s));
+        setOutput(jwe);
+        toast.success('Slow-mode JWT encryption complete!');
+    } catch (e: any) {
+        toast.error(e.message || 'JWT encryption failed.');
+        setVisualizationSteps(prev => prev.map(s => ({...s, status: 'done', data: s.data || 'Error!'})));
+    } finally {
+        setIsProcessing(false);
+    }
+  };
+
+  const runSlowDecrypt = async () => {
+    if (!input || !secret) {
+      toast.error('JWT and secret key cannot be empty.');
+      return;
+    }
+    setIsProcessing(true);
+    setOutput('');
+    setVisualizationSteps([]);
+
+    const steps = [
+        { title: '1. Parse JWE', explanation: 'The JWE string is split into its components: header, IV, ciphertext, and tag.'},
+        { title: '2. Derive Decryption Key', explanation: 'The exact same secret key is used to derive the exact same 256-bit key via SHA-256. If the secret is even one character off, the derived key will be completely different, and decryption will fail.' },
+        { title: '3. Decrypt Ciphertext', explanation: 'The derived key and IV are used with the A256GCM algorithm to decrypt the ciphertext. The authentication tag is checked to ensure the data was not tampered with.' },
+        { title: '4. Recovered Payload', explanation: 'If the key is correct and the data is authentic, the original JSON payload is successfully recovered.' }
+    ];
+    
+    const initialSteps: VisualizationStep[] = steps.map(s => ({ ...s, data: '', status: 'pending' }));
+    setVisualizationSteps(initialSteps);
+
+    try {
+        // Step 1
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 0 ? { ...s, status: 'processing' } : s));
+        await new Promise(res => setTimeout(res, 800));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 0 ? { ...s, status: 'done', data: 'JWE parsed successfully.' } : s));
+
+        // Step 2
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 1 ? { ...s, status: 'processing' } : s));
+        const derivedKey = await getDerivedKey(secret);
+        await new Promise(res => setTimeout(res, 800));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 1 ? { ...s, status: 'done', data: 'Key derived successfully (not displayed for security).' } : s));
+
+        // Step 3 & 4
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => (i === 2 || i === 3) ? { ...s, status: 'processing' } : s));
+        
+        const { payload } = await jwtDecrypt(input, derivedKey);
+        const result = JSON.stringify(payload, null, 2);
+
+        await new Promise(res => setTimeout(res, 800));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 2 ? { ...s, status: 'done', data: 'Ciphertext decrypted and verified.' } : s));
+        
+        await new Promise(res => setTimeout(res, 500));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 3 ? { ...s, status: 'done', data: result } : s));
+        setOutput(result);
+        toast.success('Slow-mode JWT decryption complete!');
+
+    } catch (e: any) {
+        toast.error(e.message || 'JWT decryption failed.');
+        setVisualizationSteps(prev => prev.map(s => ({...s, status: 'done', data: s.data || 'Error!'})));
+    } finally {
+        setIsProcessing(false);
+    }
+  };
 
   const handleEncrypt = async () => {
+    if (showSteps) {
+        runSlowEncrypt();
+        return;
+    }
     if (!input || !secret) {
       toast.error('Payload and secret key cannot be empty.');
       return;
@@ -84,6 +205,10 @@ export function JwtTool({ mode }: JwtToolProps) {
   };
 
   const handleDecrypt = async () => {
+    if (showSteps) {
+        runSlowDecrypt();
+        return;
+    }
     if (!input || !secret) {
       toast.error('JWT and secret key cannot be empty.');
       return;
@@ -226,6 +351,12 @@ export function JwtTool({ mode }: JwtToolProps) {
               disabled={isProcessing}
           />
         </div>
+
+        <div className="flex items-center space-x-2 rounded-lg border p-4">
+          <Switch id="jwt-slow-mode" checked={showSteps} onCheckedChange={setShowSteps} disabled={isProcessing} />
+          <Label htmlFor="jwt-slow-mode">Show Step-by-Step Visualization</Label>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-4">
             {mode === 'encrypt' ? (
               <Button onClick={handleEncrypt} className="flex-1" disabled={isProcessing}>
@@ -240,7 +371,16 @@ export function JwtTool({ mode }: JwtToolProps) {
             )}
         </div>
 
-        {(output || isProcessing) && (
+        {showSteps && visualizationSteps.length > 0 && (
+          <div className="pt-4">
+            <CipherVisualization
+              steps={visualizationSteps}
+              principle="JSON Web Encryption (JWE) is a standard for securely transmitting data. The content is encrypted using a secret key, ensuring confidentiality."
+            />
+          </div>
+        )}
+
+        {(output || (isProcessing && !showSteps)) && (
             <div className="grid gap-2 pt-4">
             <div className="flex justify-between items-center">
                 <Label htmlFor="jwt-output">Result</Label>
@@ -262,7 +402,7 @@ export function JwtTool({ mode }: JwtToolProps) {
             <Textarea
                 id="jwt-output"
                 readOnly
-                value={isProcessing ? animatedOutput : output}
+                value={isProcessing && !showSteps ? animatedOutput : output}
                 className="min-h-[120px] resize-y bg-muted/50 font-mono text-sm"
             />
             </div>

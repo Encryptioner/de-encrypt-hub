@@ -54,7 +54,12 @@ export function CipherVisualization({ steps, principle }: CipherVisualizationPro
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="mb-4">{step.explanation}</CardDescription>
-                  {step.data && (
+                  {step.data && step.dataType === 'image' && (
+                    <div className="mt-2 rounded-md bg-muted p-2 flex justify-center">
+                        <img src={step.data} alt={step.title} className="max-w-full h-auto max-h-48 rounded-sm object-contain" />
+                    </div>
+                  )}
+                  {step.data && (!step.dataType || step.dataType === 'text') && (
                     <pre className="mt-2 rounded-md bg-muted p-4">
                       <code className="text-muted-foreground break-all whitespace-pre-wrap font-mono text-xs">{step.data}</code>
                     </pre>

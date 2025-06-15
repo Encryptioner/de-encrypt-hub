@@ -11,6 +11,7 @@ export type VisualizationStep = {
   explanation: string;
   data: string;
   status: 'pending' | 'processing' | 'done';
+  dataType?: 'text' | 'image';
 };
 
 interface UseCipherProps {
@@ -47,14 +48,13 @@ export function useCipher({ mode }: UseCipherProps) {
     setOutput('');
     setVisualizationSteps([]);
 
-    const aesConfig = content.algorithms.find(a => a.value === 'AES');
-    const aesStepsConfig = aesConfig?.visualizationSteps;
-
-    if (!aesStepsConfig) {
-      toast.error("Could not find visualization steps for AES.");
-      setIsProcessing(false);
-      return;
-    }
+    const aesStepsConfig: Omit<VisualizationStep, 'data' | 'status'>[] = [
+      { title: '1. Prepare Data & Key', explanation: 'The input data and your secret key are prepared for the encryption process. The key is fundamental, as it controls the entire transformation process.' },
+      { title: '2. Initial Round (AddRoundKey)', explanation: 'The data is combined with a part of the "expanded" secret key using a simple XOR operation. This is the first step in obscuring the original data.' },
+      { title: '3. Main Rounds (SubBytes, ShiftRows, MixColumns, AddRoundKey)', explanation: 'The data undergoes multiple rounds (10 for AES-128) of complex transformations. Each step systematically substitutes, shuffles, and mixes the data, with the secret key guiding the transformations in each round. This is where the real strength of AES comes from.' },
+      { title: '4. Final Round', explanation: 'A final, slightly different round of transformations is applied to the data.' },
+      { title: '5. Generate Ciphertext', explanation: 'The fully transformed data is now the final ciphertext, presented in Base64 format. It is computationally infeasible to reverse this without the original secret key.' },
+    ];
 
     let dataForEncryption: string;
     let dataForVisualization: string;
@@ -78,7 +78,6 @@ export function useCipher({ mode }: UseCipherProps) {
       data: '',
       status: 'pending'
     }));
-    setVisualizationSteps(initialSteps);
     
     for (let i = 0; i < initialSteps.length; i++) {
         await new Promise(res => setTimeout(res, 100));
@@ -116,21 +115,19 @@ export function useCipher({ mode }: UseCipherProps) {
     setOutput('');
     setVisualizationSteps([]);
 
-    const aesConfig = content.algorithms.find(a => a.value === 'AES');
-    const aesStepsConfig = aesConfig?.visualizationStepsDecryption;
-
-    if (!aesStepsConfig) {
-      toast.error("Could not find visualization steps for AES Decryption.");
-      setIsProcessing(false);
-      return;
-    }
+    const aesStepsConfig: Omit<VisualizationStep, 'data' | 'status'>[] = [
+        { title: '1. Prepare Ciphertext & Key', explanation: 'The Base64 ciphertext and your secret key are loaded. The key must be identical to the one used for encryption.' },
+        { title: '2. Inverse Final Round', explanation: 'The final encryption round is reversed. This involves using the same secret key to undo the last set of transformations.' },
+        { title: '3. Inverse Main Rounds', explanation: 'The main encryption rounds are reversed one by one. Each step (Inverse ShiftRows, Inverse SubBytes, AddRoundKey, Inverse MixColumns) uses the secret key to precisely undo the scrambling that occurred during encryption.' },
+        { title: '4. Inverse Initial Round', explanation: 'The first encryption step is undone, finally revealing the original data.' },
+        { title: '5. Final Plaintext', explanation: 'The fully reversed data is now the original plaintext message.' },
+    ];
 
     const initialSteps: VisualizationStep[] = aesStepsConfig.map(s => ({
       ...s,
       data: '',
       status: 'pending'
     }));
-    setVisualizationSteps(initialSteps);
     
     for (let i = 0; i < initialSteps.length; i++) {
         await new Promise(res => setTimeout(res, 100));
