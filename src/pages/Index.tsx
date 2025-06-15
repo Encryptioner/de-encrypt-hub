@@ -28,12 +28,18 @@ const Index = () => {
       </main>
       <footer className="w-full max-w-2xl mx-auto text-center py-8">
         <p className="text-sm text-muted-foreground">{content.subtitle}</p>
-        <p className="text-xs text-muted-foreground mt-2">
-          Built with ❤️ by <a href="https://lovable.dev" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Lovable</a>.
-        </p>
+        <div className="text-xs text-muted-foreground mt-4 space-y-1">
+          <p>
+            Developed by <a href="https://encryptioner.github.io/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Ankur Mursalin</a>.
+          </p>
+          <p>
+            Copyright © {new Date().getFullYear()}. All rights reserved.
+          </p>
+        </div>
       </footer>
     </div>
   );
 };
 
 export default Index;
+
