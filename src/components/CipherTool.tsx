@@ -1,4 +1,5 @@
 
+
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Copy, RefreshCw, FileText, File as FileIcon, Download, Loader2 } from 'lucide-react';
 import content from '@/config/content.json';
-import { useCipher, Algorithm } from '@/hooks/useCipher';
+import { useCipher, type Algorithm, type VisualizationStep } from '@/hooks/useCipher';
 import { CipherVisualization } from './CipherVisualization';
 
 interface CipherToolProps {
@@ -33,7 +34,7 @@ export function CipherTool({ mode }: CipherToolProps) {
     handleCopy,
     handleDownload,
     handleSwap,
-    handleInputTypeChange,
+    setInputType,
   } = useCipher({ mode });
   
   const [animatedOutput, setAnimatedOutput] = React.useState('');
@@ -63,7 +64,7 @@ export function CipherTool({ mode }: CipherToolProps) {
             <RadioGroup
                 defaultValue="text"
                 value={inputType}
-                onValueChange={(value) => handleInputTypeChange(value as 'text' | 'file')}
+                onValueChange={(value) => setInputType(value as 'text' | 'file')}
                 className="flex items-center gap-4 py-2"
                 disabled={isProcessing}
             >

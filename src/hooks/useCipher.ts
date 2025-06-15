@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { encryptText, decryptText, Algorithm } from '@/lib/crypto';
-import { type VisualizationStep } from '@/hooks/useCipher';
+import { encrypt, decrypt, type Algorithm } from '@/lib/crypto';
 import content from '@/config/content.json';
 
-export type { Algorithm, VisualizationStep };
+export interface VisualizationStep {
+  title: string;
+  explanation: string;
+  data: string;
+  status: 'pending' | 'processing' | 'done';
+}
+
+export type { Algorithm };
 
 interface UseCipherProps {
   mode: 'encrypt' | 'decrypt';
@@ -120,7 +126,7 @@ export function useCipher({ mode }: UseCipherProps) {
           } else if (i === 1) {
             stepData = `Key: "${key.substring(0, 16)}${key.length > 16 ? '...' : ''}"`;
           } else {
-            const finalResult = await encryptText(input, key, algorithm);
+            const finalResult = encrypt(input, key, algorithm);
             stepData = finalResult;
             setOutput(finalResult);
           }
@@ -157,7 +163,7 @@ export function useCipher({ mode }: UseCipherProps) {
 
         await new Promise(res => setTimeout(res, 100));
         setVisualizationSteps(prev => prev.map((s, idx) => (idx === 2 ? { ...s, status: 'processing' } : s)));
-        const finalResult = await encryptText(input, key, algorithm);
+        const finalResult = encrypt(input, key, algorithm);
         await new Promise(res => setTimeout(res, 800));
         setVisualizationSteps(prev => prev.map((s, idx) => (idx === 2 ? { ...s, status: 'done', data: finalResult } : s)));
         setOutput(finalResult);
@@ -206,7 +212,7 @@ export function useCipher({ mode }: UseCipherProps) {
           } else if (i === 1) {
             stepData = `Key: "${key.substring(0, 16)}${key.length > 16 ? '...' : ''}"`;
           } else {
-            const finalResult = await decryptText(input, key, algorithm);
+            const finalResult = decrypt(input, key, algorithm);
             stepData = finalResult;
             setOutput(finalResult);
           }
@@ -240,7 +246,7 @@ export function useCipher({ mode }: UseCipherProps) {
                 stepData = `Ciphertext: "${input.substring(0, 48)}..."`;
             }
             if (i === steps.length - 1) {
-                const finalResult = await decryptText(input, key, algorithm);
+                const finalResult = decrypt(input, key, algorithm);
                 stepData = finalResult;
                 setOutput(finalResult);
             }
@@ -271,7 +277,7 @@ export function useCipher({ mode }: UseCipherProps) {
     setOutput('');
     try {
       await new Promise(res => setTimeout(res, 500));
-      const result = await encryptText(input, key, algorithm);
+      const result = encrypt(input, key, algorithm);
       setOutput(result);
       toast.success('Encrypted successfully!');
     } catch (error: any) {
@@ -297,7 +303,7 @@ export function useCipher({ mode }: UseCipherProps) {
     setOutput('');
     try {
       await new Promise(res => setTimeout(res, 500));
-      const result = await decryptText(input, key, algorithm);
+      const result = decrypt(input, key, algorithm);
       setOutput(result);
       toast.success('Decrypted successfully!');
     } catch (error: any) {

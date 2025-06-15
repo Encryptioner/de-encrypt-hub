@@ -1,3 +1,4 @@
+
 import CryptoJS from 'crypto-js';
 
 const algorithms = {
@@ -9,7 +10,7 @@ const algorithms = {
   RC4Drop: CryptoJS.RC4Drop,
 };
 
-type Algorithm = keyof typeof algorithms;
+export type Algorithm = keyof typeof algorithms;
 
 export const encrypt = (text: string, key: string, algorithm: Algorithm): string => {
   if (!algorithms[algorithm]) {
