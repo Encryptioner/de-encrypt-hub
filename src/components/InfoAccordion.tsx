@@ -13,7 +13,7 @@ export function InfoAccordion() {
         <AccordionItem value="how-it-works">
           <AccordionTrigger className="text-lg font-semibold">How It Works</AccordionTrigger>
           <AccordionContent className="text-muted-foreground space-y-2">
-            <p>De-encrypt Hub leverages the built-in <code className="font-mono text-sm bg-muted p-1 rounded">window.crypto</code> API available in modern web browsers. This powerful API allows for cryptographic operations like encryption, decryption, and key generation to be performed directly on your device.</p>
+            <p>De-encrypt Hub leverages the built-in <code className="font-mono text-sm bg-muted p-1 rounded">window.crypto</code> API and other well-established libraries to perform a wide range of cryptographic operations directly on your device. This includes text and image encryption, digital signatures, hashing, and JWT handling.</p>
             <p>Because all operations are client-side, your sensitive information never leaves your computer. This provides a high level of privacy and security, as there is no server interaction involved in the core cryptographic processes.</p>
           </AccordionContent>
         </AccordionItem>
@@ -23,6 +23,7 @@ export function InfoAccordion() {
             <p><strong>Your security is our priority, but it's a shared responsibility.</strong> While this tool is designed to be secure, please remember:</p>
             <ul className="list-disc list-inside space-y-1">
               <li><strong>Do not share private keys.</strong> Your private key should be kept secret and secure. Never share it with anyone or post it publicly.</li>
+              <li><strong>This is not a password manager.</strong> Do not use this tool to store sensitive credentials. Use a dedicated, reputable password manager instead.</li>
               <li><strong>Be mindful of your environment.</strong> Ensure your computer is free from malware and that you are on a secure network connection.</li>
               <li><strong>This is a browser-based tool.</strong> While we utilize secure browser APIs, it does not replace dedicated, audited security software for high-stakes applications. Always assess your own risk.</li>
             </ul>
@@ -33,7 +34,7 @@ export function InfoAccordion() {
           <AccordionContent className="text-muted-foreground space-y-4">
             <div>
               <h4 className="font-semibold text-foreground">Input/Output</h4>
-              <p>You can encrypt/decrypt any UTF-8 text. File support for encryption and decryption is planned for a future update.</p>
+              <p>You can encrypt/decrypt any UTF-8 text. The image tool supports common formats like PNG, JPEG, and WEBP for visual encryption, outputting a downloadable image file.</p>
             </div>
             <div>
               <h4 className="font-semibold text-foreground">Keys & Formats</h4>
@@ -53,7 +54,7 @@ export function InfoAccordion() {
                   <tbody>
                     <tr className="border-b">
                       <td className="p-2 font-medium">Symmetric Ciphers</td>
-                      <td className="p-2">AES, DES, TripleDES</td>
+                      <td className="p-2">AES, DES, TripleDES, Rabbit, RC4†</td>
                       <td className="p-2">Encrypting data with a single shared key.</td>
                     </tr>
                     <tr className="border-b">
@@ -68,17 +69,23 @@ export function InfoAccordion() {
                     </tr>
                     <tr className="border-b">
                       <td className="p-2 font-medium">Hashing</td>
-                      <td className="p-2">SHA-256, SHA-512, MD5</td>
+                      <td className="p-2">SHA-256, SHA-512, SHA-1†, MD5†</td>
                       <td className="p-2">Creating a one-way, unique data fingerprint.</td>
                     </tr>
-                    <tr>
+                    <tr className="border-b">
                       <td className="p-2 font-medium">Token Handling</td>
                       <td className="p-2">JWT</td>
                       <td className="p-2">Securely transmitting information between parties.</td>
                     </tr>
+                    <tr>
+                      <td className="p-2 font-medium">Image Ciphers</td>
+                      <td className="p-2">Pixel Scramble, Color Scramble, XOR Cipher</td>
+                      <td className="p-2">Visually encrypting images for privacy or artistic effect.</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
+              <p className="text-xs mt-2">† Algorithm is considered insecure and should be used with caution, primarily for educational or legacy purposes.</p>
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -91,7 +98,11 @@ export function InfoAccordion() {
             </div>
             <div>
               <h4 className="font-semibold text-foreground">What algorithms are supported?</h4>
-              <p>We support a range of industry-standard algorithms, including AES, DES, TripleDES for symmetric ciphers, RSA for asymmetric encryption and signing, JWT for token handling, and various hashing functions like SHA-256.</p>
+              <p>We support a range of industry-standard algorithms across several categories: symmetric ciphers (AES, DES, etc.), asymmetric encryption and signing (RSA, Ed25519), token handling (JWT), image ciphers (pixel scrambling), and various hashing functions (SHA-256, SHA-512).</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground">Can I encrypt files?</h4>
+              <p>Currently, we support text-based encryption and dedicated image encryption. Support for encrypting generic files is planned for a future update.</p>
             </div>
              <div>
               <h4 className="font-semibold text-foreground">Can I use this for production systems?</h4>
