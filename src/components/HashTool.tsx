@@ -1,12 +1,12 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { hash, HashAlgorithm } from '@/lib/crypto';
-import { Copy } from 'lucide-react';
+import { Copy, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const hashAlgorithms: { name: string; value: HashAlgorithm }[] = [
@@ -20,18 +20,47 @@ export function HashTool() {
   const [input, setInput] = useState('');
   const [algorithm, setAlgorithm] = useState<HashAlgorithm>('SHA-256');
   const [output, setOutput] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [animatedOutput, setAnimatedOutput] = useState('');
+
+  useEffect(() => {
+    if (isProcessing) {
+      const randomChars = 'abcdef0123456789';
+      let length = 64; // Corresponds to SHA-256
+      if (algorithm === 'SHA-512') length = 128;
+      if (algorithm === 'SHA-1') length = 40;
+      if (algorithm === 'MD5') length = 32;
+
+      const interval = setInterval(() => {
+        let result = '';
+        for (let i = 0; i < length; i++) {
+          result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+        }
+        setAnimatedOutput(result);
+      }, 50);
+
+      return () => clearInterval(interval);
+    }
+  }, [isProcessing, algorithm]);
 
   const handleHash = async () => {
     if (!input) {
       toast.error('Input cannot be empty.');
       return;
     }
+    setIsProcessing(true);
+    setOutput('');
     try {
+      // Artificial delay for animation
+      await new Promise(res => setTimeout(res, 500));
       const result = await hash(input, algorithm);
       setOutput(result);
       toast.success('Hashed successfully!');
     } catch (error: any) {
       toast.error(error.message || 'Hashing failed.');
+      setOutput('');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -55,13 +84,14 @@ export function HashTool() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             className="min-h-[120px] resize-y"
+            disabled={isProcessing}
           />
         </div>
 
         <div className="grid md:grid-cols-2 gap-4 items-end">
             <div className="grid gap-2">
                 <Label htmlFor="hash-algorithm">Algorithm</Label>
-                <Select value={algorithm} onValueChange={(value) => setAlgorithm(value as HashAlgorithm)}>
+                <Select value={algorithm} onValueChange={(value) => setAlgorithm(value as HashAlgorithm)} disabled={isProcessing}>
                     <SelectTrigger id="hash-algorithm">
                     <SelectValue placeholder="Select algorithm" />
                     </SelectTrigger>
@@ -74,14 +104,17 @@ export function HashTool() {
                     </SelectContent>
                 </Select>
             </div>
-            <Button onClick={handleHash} className="w-full">Generate Hash</Button>
+            <Button onClick={handleHash} className="w-full" disabled={isProcessing}>
+                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isProcessing ? 'Generating...' : 'Generate Hash'}
+            </Button>
         </div>
 
-        {output && (
+        {(output || isProcessing) && (
             <div className="grid gap-2 pt-4 border-t">
             <div className="flex justify-between items-center">
                 <Label htmlFor="hash-output">Generated Hash</Label>
-                  <Button variant="ghost" size="icon" onClick={handleCopy} title="Copy to Clipboard">
+                  <Button variant="ghost" size="icon" onClick={handleCopy} title="Copy to Clipboard" disabled={isProcessing}>
                     <Copy className="w-4 h-4" />
                     <span className="sr-only">Copy</span>
                   </Button>
@@ -89,8 +122,9 @@ export function HashTool() {
             <Textarea
                 id="hash-output"
                 readOnly
-                value={output}
+                value={isProcessing ? animatedOutput : output}
                 className="min-h-[80px] resize-y bg-muted/50 font-mono text-sm"
+                placeholder={isProcessing ? '...' : ''}
             />
             </div>
         )}
