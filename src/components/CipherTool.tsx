@@ -53,7 +53,7 @@ export function CipherTool({ mode }: CipherToolProps) {
   }, [isProcessing, inputType, input, showSteps]);
 
   const algorithmData = content.algorithms.find(a => a.value === algorithm);
-  const supportsSlowMode = algorithm === 'AES' && mode === 'encrypt';
+  const supportsSlowMode = algorithm === 'AES';
 
   return (
     <>
@@ -119,26 +119,22 @@ export function CipherTool({ mode }: CipherToolProps) {
                         </SelectItem>
                     ))}
                     </SelectContent>
-                </Select>
             </div>
         </div>
 
-        {mode === 'encrypt' && (
+        {supportsSlowMode && (
             <div className="flex items-center space-x-2 rounded-lg border p-4">
                 <Switch
                     id="slow-mode-switch"
                     checked={showSteps}
                     onCheckedChange={(checked) => {
                         setShowSteps(checked);
-                        if (!checked) {
-                            // You may want to clear visualization steps when turning off
-                        }
                     }}
-                    disabled={!supportsSlowMode || isProcessing}
+                    disabled={isProcessing}
                 />
                 <Label htmlFor="slow-mode-switch" className="flex flex-col">
                     Show Step-by-Step Visualization
-                    {!supportsSlowMode && <span className="text-xs font-normal text-muted-foreground">(Only available for AES Encryption)</span>}
+                    <span className="text-xs font-normal text-muted-foreground">(Only for AES)</span>
                 </Label>
             </div>
         )}
@@ -161,7 +157,6 @@ export function CipherTool({ mode }: CipherToolProps) {
             <CipherVisualization steps={visualizationSteps} principle={algorithmData?.principle} />
         )}
 
-        {(output || (isProcessing && !showSteps)) && (
             <div className="grid gap-2 pt-4">
                 <div className="flex justify-between items-center">
                     <Label htmlFor="output">Result</Label>

@@ -107,6 +107,59 @@ export function useCipher({ mode }: UseCipherProps) {
     toast.success("Slow-mode encryption visualization complete!");
   };
   
+  const runSlowAesDecryption = async (data: string) => {
+    if (!key) {
+      toast.error('Secret key cannot be empty.');
+      return;
+    }
+    setIsProcessing(true);
+    setOutput('');
+    setVisualizationSteps([]);
+
+    const aesConfig = content.algorithms.find(a => a.value === 'AES');
+    const aesStepsConfig = aesConfig?.visualizationStepsDecryption;
+
+    if (!aesStepsConfig) {
+      toast.error("Could not find visualization steps for AES Decryption.");
+      setIsProcessing(false);
+      return;
+    }
+
+    const initialSteps: VisualizationStep[] = aesStepsConfig.map(s => ({
+      ...s,
+      data: '',
+      status: 'pending'
+    }));
+    setVisualizationSteps(initialSteps);
+    
+    for (let i = 0; i < initialSteps.length; i++) {
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'processing', data: '...' } : s)));
+        await new Promise(res => setTimeout(res, 800));
+
+        let stepData: string;
+
+        if (i === initialSteps.length - 1) {
+            try {
+                const finalResult = decrypt(data, key, 'AES');
+                stepData = finalResult.substring(0, 64) + (finalResult.length > 64 ? '...' : '');
+                setOutput(finalResult);
+            } catch (e: any) {
+                stepData = `Error: ${e.message}`;
+                setOutput(stepData);
+                toast.error(`Decryption failed: ${e.message}`);
+            }
+        } else {
+            stepData = `Simulating inverse operation... ${Math.random().toString(36).substring(2, 10)}`;
+        }
+        
+        setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
+    }
+
+    setIsProcessing(false);
+    toast.success("Slow-mode decryption visualization complete!");
+  };
+
   const handleEncrypt = async () => {
     if (!key) {
       toast.error('Secret key cannot be empty.');
@@ -160,6 +213,16 @@ export function useCipher({ mode }: UseCipherProps) {
       toast.error('Input ciphertext and key cannot be empty.');
       return;
     }
+
+    if (showSteps && algorithm === 'AES') {
+      if (inputType === 'file') {
+        toast.warning('Slow mode is not supported for file decryption yet.');
+        return;
+      }
+      runSlowAesDecryption(input);
+      return;
+    }
+
     setIsProcessing(true);
     setOutput('');
     try {

@@ -1,5 +1,5 @@
 
-import { ShieldCheck, ShieldOff, Check } from 'lucide-react';
+import { ShieldCheck, ShieldOff, Eye } from 'lucide-react';
 
 export function HeroSection() {
   return (
@@ -8,7 +8,7 @@ export function HeroSection() {
         Secure, Private, Browser-Based Encryption & Decryption
       </h2>
       <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-        De-encrypt Hub provides a suite of professional-grade cryptographic tools that work entirely in your browser. Your data never leaves your device.
+        De-encrypt Hub provides a suite of professional-grade cryptographic tools that work entirely in your browser. Your data never leaves your device. Now with step-by-step algorithm visualizations!
       </p>
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
         <div className="flex flex-col items-center gap-2 p-4 rounded-lg">
@@ -22,9 +22,9 @@ export function HeroSection() {
           <p className="text-sm text-muted-foreground">Your sensitive data, keys, and files are never sent to any server.</p>
         </div>
         <div className="flex flex-col items-center gap-2 p-4 rounded-lg">
-          <Check className="h-10 w-10 text-primary" />
-          <h3 className="font-semibold">Free to Use</h3>
-          <p className="text-sm text-muted-foreground">The tool is free to use. The code is public and can be audited.</p>
+          <Eye className="h-10 w-10 text-primary" />
+          <h3 className="font-semibold">Visualize Algorithms</h3>
+          <p className="text-sm text-muted-foreground">Understand how ciphers work with step-by-step visualizations.</p>
         </div>
       </div>
     </section>

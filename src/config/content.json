@@ -49,6 +49,40 @@
           "title": "6. Final Ciphertext",
           "explanation": "After the final round, the state array holds the encrypted data, which is then presented as the final ciphertext."
         }
+      ],
+      "visualizationStepsDecryption": [
+        {
+          "title": "1. Initial Round - AddRoundKey",
+          "explanation": "The ciphertext is combined with the last round key using XOR. This is the first step in reversing the encryption."
+        },
+        {
+          "title": "2. Main Rounds (Inverse)",
+          "explanation": "The core of AES decryption. This step is repeated multiple times, applying the inverse transformations: InvShiftRows, InvSubBytes, AddRoundKey, and InvMixColumns."
+        },
+        {
+          "title": "2a. Inverse ShiftRows",
+          "explanation": "The bytes in each row of the state are cyclically shifted back to their original positions, reversing the ShiftRows permutation."
+        },
+        {
+          "title": "2b. Inverse SubBytes",
+          "explanation": "Each byte in the state array is substituted with a byte from the inverse S-box lookup table, reversing the non-linear substitution."
+        },
+        {
+          "title": "2c. AddRoundKey",
+          "explanation": "The state is XORed with the corresponding round key. The round keys are used in reverse order from the encryption process."
+        },
+        {
+          "title": "2d. Inverse MixColumns",
+          "explanation": "Each column is transformed using an inverse mathematical operation to reverse the diffusion provided by MixColumns. This step is skipped in the last round."
+        },
+        {
+          "title": "3. Final Round (Inverse)",
+          "explanation": "The final round of decryption includes InvShiftRows, InvSubBytes, and AddRoundKey, but omits the InvMixColumns step."
+        },
+        {
+          "title": "4. Final Plaintext",
+          "explanation": "After the final round, the state array holds the original data, which is then presented as the final plaintext."
+        }
       ]
     },
     { "name": "DES", "value": "DES", "description": "Data Encryption Standard - An older symmetric-key algorithm." },
