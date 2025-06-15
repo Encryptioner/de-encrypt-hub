@@ -61,5 +61,46 @@
     { "name": "Pixel Scramble", "value": "pixel-scramble", "description": "Shuffles the positions of pixels in the image based on the key. Creates a mosaic effect." },
     { "name": "Color Scramble", "value": "color-scramble", "description": "Swaps the Red, Green, and Blue channels of each pixel based on the key. Distorts colors." },
     { "name": "XOR Cipher", "value": "xor-cipher", "description": "Applies a bitwise XOR operation to each pixel's color values. Creates a noisy, static-like image." }
-  ]
+  ],
+  "rsa": {
+    "name": "RSA-OAEP",
+    "description": "Asymmetric encryption standard using Optimal Asymmetric Encryption Padding.",
+    "principle": "RSA encryption relies on the computational difficulty of factoring large prime numbers. A public key is used to encrypt data, and a private key is required to decrypt it. OAEP is a padding scheme used with RSA to add an element of randomness, which prevents several types of attacks and makes it more secure.",
+    "encryptionSteps": [
+      {
+        "title": "1. Import Public Key",
+        "explanation": "The provided public key (in JWK format) is imported and prepared for encryption. This key contains the modulus (n) and the public exponent (e)."
+      },
+      {
+        "title": "2. Prepare Message (RSA-OAEP Padding)",
+        "explanation": "The plaintext message is encoded and then padded using the Optimal Asymmetric Encryption Padding (OAEP) scheme. This adds randomness and structure to prevent attacks."
+      },
+      {
+        "title": "3. Modular Exponentiation",
+        "explanation": "The padded message is converted to a number and raised to the power of the public exponent (e), modulo the modulus (n). This is the core mathematical operation of RSA encryption."
+      },
+      {
+        "title": "4. Final Ciphertext (Base64)",
+        "explanation": "The resulting number from the exponentiation is converted into a byte array and then encoded into Base64 format for easy transport."
+      }
+    ],
+    "decryptionSteps": [
+      {
+        "title": "1. Import Private Key",
+        "explanation": "The provided private key (in JWK format) is imported. This key contains the necessary components, including the private exponent (d), to perform decryption."
+      },
+      {
+        "title": "2. Decode Ciphertext",
+        "explanation": "The Base64 encoded ciphertext is decoded back into a raw byte array, which represents the encrypted number."
+      },
+      {
+        "title": "3. Modular Exponentiation",
+        "explanation": "The encrypted number is raised to the power of the private exponent (d), modulo the modulus (n). This reverses the encryption process."
+      },
+      {
+        "title": "4. Remove Padding & Decode",
+        "explanation": "The OAEP padding is removed from the result, revealing the original encoded message. The message is then decoded back to its original text form."
+      }
+    ]
+  }
 }
