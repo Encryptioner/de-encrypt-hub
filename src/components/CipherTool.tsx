@@ -80,7 +80,7 @@ export function CipherTool({ mode }: CipherToolProps) {
             {inputType === 'text' ? (
                 <Textarea
                     id="input"
-                    placeholder={mode === 'encrypt' ? "Your secret message..." : "Your ciphertext to decrypt..."}
+                    placeholder={mode === 'encrypt' ? "Your secret message..." : "Enter your ciphertext here..."}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     className="min-h-[120px] resize-y"
