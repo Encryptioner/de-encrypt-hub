@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -6,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 import { Copy, Key, FileText, File } from 'lucide-react';
 import { Input } from './ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Helper to convert ArrayBuffer to Base64
 function arrayBufferToBase64(buffer: ArrayBuffer) {
@@ -160,30 +159,39 @@ export function Ed25519Tool() {
 
         <div className="grid gap-2">
           <Label>Data to Sign</Label>
-          <Tabs defaultValue="text" className="w-full" onValueChange={(value) => {
-            setInputType(value as 'text' | 'file');
-            setSignature('');
-          }}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="text"><FileText className="mr-2 h-4 w-4" />Text Input</TabsTrigger>
-              <TabsTrigger value="file"><File className="mr-2 h-4 w-4" />File Input</TabsTrigger>
-            </TabsList>
-            <TabsContent value="text" className="pt-2">
-              <Textarea
-                id="ed-input"
-                placeholder="The message to sign..."
-                value={textInput}
-                onChange={(e) => { setTextInput(e.target.value); setSignature(''); }}
-                className="min-h-[100px] resize-y"
-              />
-            </TabsContent>
-            <TabsContent value="file" className="pt-2">
-              <div className="grid gap-2">
-                <Input id="ed-file-input" type="file" onChange={handleFileChange} />
-                {file && <p className="text-sm text-muted-foreground">Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)</p>}
-              </div>
-            </TabsContent>
-          </Tabs>
+           <RadioGroup
+                defaultValue="text"
+                value={inputType}
+                onValueChange={(value) => {
+                    setInputType(value as 'text' | 'file');
+                    setSignature('');
+                }}
+                className="flex items-center gap-4 py-2"
+            >
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="text" id="ed-text-type" />
+                    <Label htmlFor="ed-text-type" className="flex items-center cursor-pointer font-normal"><FileText className="mr-2 h-4 w-4" />Text Input</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="file" id="ed-file-type" />
+                    <Label htmlFor="ed-file-type" className="flex items-center cursor-pointer font-normal"><File className="mr-2 h-4 w-4" />File Input</Label>
+                </div>
+            </RadioGroup>
+            
+            {inputType === 'text' ? (
+                <Textarea
+                    id="ed-input"
+                    placeholder="The message to sign..."
+                    value={textInput}
+                    onChange={(e) => { setTextInput(e.target.value); setSignature(''); }}
+                    className="min-h-[100px] resize-y"
+                />
+            ) : (
+                <div className="grid gap-2">
+                    <Input id="ed-file-input" type="file" onChange={handleFileChange} />
+                    {file && <p className="text-sm text-muted-foreground">Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)</p>}
+                </div>
+            )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">

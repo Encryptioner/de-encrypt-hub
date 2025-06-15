@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -6,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 import { FileText, File as FileIcon, Download, Unlock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { base64ToArrayBuffer } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
@@ -92,21 +91,30 @@ export function RsaDecryptForm({ privateKey }: RsaDecryptFormProps) {
       <CardContent className="space-y-4">
         <div className="grid gap-2">
           <Label>Data to Decrypt</Label>
-          <Tabs defaultValue="text" className="w-full" onValueChange={(value) => setDecryptInputType(value as 'text' | 'file')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="text"><FileText className="mr-2 h-4 w-4" />Text Input</TabsTrigger>
-              <TabsTrigger value="file"><FileIcon className="mr-2 h-4 w-4" />File Input</TabsTrigger>
-            </TabsList>
-            <TabsContent value="text" className="pt-2">
-              <Textarea id="rsa-encrypted-input" placeholder="Paste your Base64 encrypted data here..." value={encryptedData} onChange={(e) => setEncryptedData(e.target.value)} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
-            </TabsContent>
-            <TabsContent value="file" className="pt-2">
-              <div className="grid gap-2">
-                <Input type="file" onChange={handleDecryptFileChange} />
-                {decryptFile && <p className="text-sm text-muted-foreground">Selected: {decryptFile.name}</p>}
-              </div>
-            </TabsContent>
-          </Tabs>
+           <RadioGroup
+                defaultValue="text"
+                value={decryptInputType}
+                onValueChange={(value) => setDecryptInputType(value as 'text' | 'file')}
+                className="flex items-center gap-4 py-2"
+            >
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="text" id="rsa-decrypt-text-type" />
+                    <Label htmlFor="rsa-decrypt-text-type" className="flex items-center cursor-pointer font-normal"><FileText className="mr-2 h-4 w-4" />Text Input</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="file" id="rsa-decrypt-file-type" />
+                    <Label htmlFor="rsa-decrypt-file-type" className="flex items-center cursor-pointer font-normal"><FileIcon className="mr-2 h-4 w-4" />File Input</Label>
+                </div>
+            </RadioGroup>
+
+            {decryptInputType === 'text' ? (
+                <Textarea id="rsa-encrypted-input" placeholder="Paste your Base64 encrypted data here..." value={encryptedData} onChange={(e) => setEncryptedData(e.target.value)} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
+            ) : (
+                <div className="grid gap-2">
+                    <Input type="file" onChange={handleDecryptFileChange} />
+                    {decryptFile && <p className="text-sm text-muted-foreground">Selected: {decryptFile.name}</p>}
+                </div>
+            )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">

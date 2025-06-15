@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 import { Copy, Key, FileText, File as FileIcon, Download } from 'lucide-react';
 import { Input } from './ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { arrayBufferToBase64 } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
@@ -170,15 +170,26 @@ export function RsaTool() {
             <CardContent className="space-y-4">
                 <div className="grid gap-2">
                     <Label>Data to Sign</Label>
-                    <Tabs defaultValue="text" className="w-full" onValueChange={(value) => {
-                        setSignInputType(value as 'text' | 'file');
-                        setSignature('');
-                    }}>
-                        <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="text"><FileText className="mr-2 h-4 w-4" />Text Input</TabsTrigger>
-                        <TabsTrigger value="file"><FileIcon className="mr-2 h-4 w-4" />File Input</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="text" className="pt-2">
+                    <RadioGroup
+                        defaultValue="text"
+                        value={signInputType}
+                        onValueChange={(value) => {
+                            setSignInputType(value as 'text' | 'file');
+                            setSignature('');
+                        }}
+                        className="flex items-center gap-4 py-2"
+                    >
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="text" id="rsa-sign-text-type" />
+                            <Label htmlFor="rsa-sign-text-type" className="flex items-center cursor-pointer font-normal"><FileText className="mr-2 h-4 w-4" />Text Input</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="file" id="rsa-sign-file-type" />
+                            <Label htmlFor="rsa-sign-file-type" className="flex items-center cursor-pointer font-normal"><FileIcon className="mr-2 h-4 w-4" />File Input</Label>
+                        </div>
+                    </RadioGroup>
+
+                    {signInputType === 'text' ? (
                         <Textarea
                             id="rsa-sign-input"
                             placeholder="The message to sign..."
@@ -186,14 +197,12 @@ export function RsaTool() {
                             onChange={(e) => { setSignTextInput(e.target.value); setSignature(''); }}
                             className="min-h-[120px] resize-y"
                         />
-                        </TabsContent>
-                        <TabsContent value="file" className="pt-2">
+                    ) : (
                         <div className="grid gap-2">
                             <Input id="rsa-sign-file-input" type="file" onChange={handleSignFileChange} />
                             {signFile && <p className="text-sm text-muted-foreground">Selected: {signFile.name} ({(signFile.size / 1024).toFixed(2)} KB)</p>}
                         </div>
-                        </TabsContent>
-                    </Tabs>
+                    )}
                 </div>
                 <Button onClick={handleSign} className="w-full">Sign with Private Key</Button>
                 {signature && (

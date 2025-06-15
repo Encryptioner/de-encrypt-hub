@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Copy, RefreshCw, FileText, File as FileIcon, Download } from 'lucide-react';
 import content from '@/config/content.json';
 import { useCipher, Algorithm } from '@/hooks/useCipher';
@@ -35,32 +35,36 @@ export function CipherTool({ mode }: CipherToolProps) {
       <div className="space-y-6 pt-4">
         <div className="grid gap-2">
             <Label>Input</Label>
-            <Tabs 
-                defaultValue="text" 
+            <RadioGroup
+                defaultValue="text"
                 value={inputType}
-                className="w-full" 
                 onValueChange={(value) => handleInputTypeChange(value as 'text' | 'file')}
+                className="flex items-center gap-4 py-2"
             >
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="text"><FileText className="mr-2 h-4 w-4" />Text</TabsTrigger>
-                    <TabsTrigger value="file"><FileIcon className="mr-2 h-4 w-4" />File</TabsTrigger>
-                </TabsList>
-                <TabsContent value="text" className="pt-2">
-                    <Textarea
-                        id="input"
-                        placeholder="Your secret message or ciphertext..."
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        className="min-h-[120px] resize-y"
-                    />
-                </TabsContent>
-                <TabsContent value="file" className="pt-2">
-                     <div className="grid gap-2">
-                        <Input id="file-input" type="file" onChange={handleFileChange} key={file?.name || ''} />
-                        {file && <p className="text-sm text-muted-foreground">Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)</p>}
-                    </div>
-                </TabsContent>
-            </Tabs>
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="text" id="cipher-text-type" />
+                    <Label htmlFor="cipher-text-type" className="flex items-center cursor-pointer font-normal"><FileText className="mr-2 h-4 w-4"/>Text</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="file" id="cipher-file-type" />
+                    <Label htmlFor="cipher-file-type" className="flex items-center cursor-pointer font-normal"><FileIcon className="mr-2 h-4 w-4"/>File</Label>
+                </div>
+            </RadioGroup>
+            
+            {inputType === 'text' ? (
+                <Textarea
+                    id="input"
+                    placeholder="Your secret message or ciphertext..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    className="min-h-[120px] resize-y"
+                />
+            ) : (
+                <div className="grid gap-2">
+                    <Input id="file-input" type="file" onChange={handleFileChange} key={file?.name || ''} />
+                    {file && <p className="text-sm text-muted-foreground">Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)</p>}
+                </div>
+            )}
         </div>
         <div className="grid md:grid-cols-2 gap-4">
             <div className="grid gap-2">

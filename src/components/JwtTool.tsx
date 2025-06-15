@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 import { EncryptJWT, jwtDecrypt } from 'jose';
 import { Copy, RefreshCw, Download, FileText, File as FileIcon } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 
 /**
  * Derives a 256-bit key from a secret string using SHA-256.
@@ -144,27 +144,38 @@ export function JwtTool({ mode }: JwtToolProps) {
               className="min-h-[120px] resize-y"
             />
           ) : (
-            <Tabs defaultValue="text" className="w-full" onValueChange={(value) => setDecryptInputType(value as 'text' | 'file')}>
-              <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="text"><FileText className="mr-2 h-4 w-4" />Text Input</TabsTrigger>
-                  <TabsTrigger value="file"><FileIcon className="mr-2 h-4 w-4" />File Input</TabsTrigger>
-              </TabsList>
-              <TabsContent value="text" className="pt-2">
-                <Textarea
-                  id="jwt-input"
-                  placeholder='Paste your JWT token here...'
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  className="min-h-[120px] resize-y font-mono text-sm"
-                />
-              </TabsContent>
-              <TabsContent value="file" className="pt-2">
-                  <div className="grid gap-2">
-                      <Input type="file" onChange={handleDecryptFileChange} />
-                      {decryptFile && <p className="text-sm text-muted-foreground">Selected: {decryptFile.name}</p>}
-                  </div>
-              </TabsContent>
-            </Tabs>
+             <div className="space-y-2">
+                <RadioGroup
+                    defaultValue="text"
+                    value={decryptInputType}
+                    onValueChange={(value) => setDecryptInputType(value as 'text' | 'file')}
+                    className="flex items-center gap-4 py-2"
+                >
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="text" id="jwt-text-type" />
+                        <Label htmlFor="jwt-text-type" className="flex items-center cursor-pointer font-normal"><FileText className="mr-2 h-4 w-4" />Text Input</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="file" id="jwt-file-type" />
+                        <Label htmlFor="jwt-file-type" className="flex items-center cursor-pointer font-normal"><FileIcon className="mr-2 h-4 w-4" />File Input</Label>
+                    </div>
+                </RadioGroup>
+                
+                {decryptInputType === 'text' ? (
+                    <Textarea
+                      id="jwt-input"
+                      placeholder='Paste your JWT token here...'
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      className="min-h-[120px] resize-y font-mono text-sm"
+                    />
+                ) : (
+                    <div className="grid gap-2">
+                        <Input type="file" onChange={handleDecryptFileChange} />
+                        {decryptFile && <p className="text-sm text-muted-foreground">Selected: {decryptFile.name}</p>}
+                    </div>
+                )}
+            </div>
           )}
         </div>
         <div className="grid gap-2">
