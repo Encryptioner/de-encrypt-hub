@@ -33,12 +33,13 @@ export function useEd25519() {
   const [fileBuffer, setFileBuffer] = React.useState<ArrayBuffer | null>(null);
   const [signature, setSignature] = React.useState('');
   const [isProcessing, setIsProcessing] = React.useState(false);
+  const [processingAction, setProcessingAction] = React.useState<'sign' | 'verify' | null>(null);
   const [animatedSignature, setAnimatedSignature] = React.useState('');
   const [showSteps, setShowSteps] = React.useState(false);
   const [visualizationSteps, setVisualizationSteps] = React.useState<VisualizationStep[]>([]);
   
   React.useEffect(() => {
-    if (isProcessing && !showSteps) {
+    if (isProcessing && processingAction === 'sign' && !showSteps) {
       const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
       const interval = setInterval(() => {
         let result = '';
@@ -50,7 +51,7 @@ export function useEd25519() {
 
       return () => clearInterval(interval);
     }
-  }, [isProcessing, showSteps]);
+  }, [isProcessing, showSteps, processingAction]);
 
   const handleGenerateKeys = async () => {
     try {
@@ -97,6 +98,7 @@ export function useEd25519() {
 
   const runSlowSign = async (dataToSign: ArrayBuffer) => {
     setIsProcessing(true);
+    setProcessingAction('sign');
     setSignature('');
     setVisualizationSteps([]);
 
@@ -139,6 +141,60 @@ export function useEd25519() {
         toast.error('Signing failed. Ensure the private key is correct.');
     } finally {
         setIsProcessing(false);
+        setProcessingAction(null);
+    }
+  };
+
+  const runSlowVerify = async (dataToVerify: ArrayBuffer, signatureToVerify: string) => {
+    setIsProcessing(true);
+    setProcessingAction('verify');
+    setVisualizationSteps([]);
+
+    const steps = [
+        { title: '1. Load Data, Public Key & Signature', explanation: 'Verification uses the public data, the signature, and the public key. The public key corresponds to the private key used for signing.' },
+        { title: '2. Hash Original Message (SHA-512)', explanation: 'Just like signing, the verifier re-calculates the SHA-512 hash of the original message. This must match the hash used during signing.' },
+        { title: '3. Verify Signature with Public Key', explanation: 'The core of verification. The algorithm uses the public key to perform a mathematical check on the signature against the data hash. This should confirm the private key\'s operation.' },
+        { title: '4. Compare and Validate', explanation: 'The result of the check is a simple boolean: valid or invalid. If valid, the signature is authentic and the data is untampered. If invalid, the signature or data cannot be trusted.' },
+    ];
+    
+    const initialSteps: VisualizationStep[] = steps.map(s => ({ ...s, data: '', status: 'pending' }));
+    
+    try {
+        for (let i = 0; i < initialSteps.length; i++) {
+            await new Promise(res => setTimeout(res, 100));
+            setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'processing', data: '...' } : s)));
+            await new Promise(res => setTimeout(res, 800));
+
+            let stepData = '';
+            if (i === 0) {
+                stepData = `Public key, data, and signature loaded.`;
+            } else if (i === 1) {
+                const hashBuffer = await window.crypto.subtle.digest('SHA-512', dataToVerify);
+                stepData = `Message Hash: ${arrayBufferToBase64(hashBuffer).substring(0, 44)}...`;
+            } else if (i === 2) {
+                stepData = `Verifying signature against hash using public key...`;
+            } else {
+                const publicKeyBuffer = base64ToArrayBuffer(publicKey);
+                const signatureBuffer = base64ToArrayBuffer(signatureToVerify);
+                const key = await window.crypto.subtle.importKey('spki', publicKeyBuffer, { name: 'Ed25519' }, true, ['verify']);
+                const isValid = await window.crypto.subtle.verify('Ed25519', key, signatureBuffer, dataToVerify);
+                stepData = `Verification Result: ${isValid ? 'VALID' : 'INVALID'}`;
+                if (isValid) {
+                    toast.success("Signature is valid!");
+                } else {
+                    toast.error("Signature is INVALID!");
+                }
+            }
+            
+            setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
+        }
+        toast.info("Verification visualization complete!");
+    } catch (e: any) {
+        toast.error('Verification failed. Ensure the public key and signature are correct.');
+        setVisualizationSteps(prev => prev.map(s => s.status === 'processing' ? {...s, status: 'done', data: 'Error!'} : s));
+    } finally {
+        setIsProcessing(false);
+        setProcessingAction(null);
     }
   };
 
@@ -169,6 +225,7 @@ export function useEd25519() {
     }
 
     setIsProcessing(true);
+    setProcessingAction('sign');
     setSignature('');
     try {
       await new Promise(res => setTimeout(res, 500)); // artifical delay
@@ -182,6 +239,59 @@ export function useEd25519() {
       console.error(error);
     } finally {
       setIsProcessing(false);
+      setProcessingAction(null);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!publicKey) {
+      toast.error('Public key is required to verify.');
+      return;
+    }
+    if (!signature) {
+      toast.error('Signature is required to verify.');
+      return;
+    }
+
+    let dataToVerify: ArrayBuffer;
+    if (inputType === 'text') {
+      if (!textInput) {
+        toast.error('Input message is required.');
+        return;
+      }
+      dataToVerify = new TextEncoder().encode(textInput);
+    } else {
+      if (!fileBuffer) {
+        toast.error('A file must be loaded first.');
+        return;
+      }
+      dataToVerify = fileBuffer;
+    }
+
+    if (showSteps) {
+        await runSlowVerify(dataToVerify, signature);
+        return;
+    }
+
+    setIsProcessing(true);
+    setProcessingAction('verify');
+    try {
+      await new Promise(res => setTimeout(res, 500)); // artifical delay
+      const publicKeyBuffer = base64ToArrayBuffer(publicKey);
+      const signatureBuffer = base64ToArrayBuffer(signature);
+      const key = await window.crypto.subtle.importKey('spki', publicKeyBuffer, { name: 'Ed25519' }, true, ['verify']);
+      const isValid = await window.crypto.subtle.verify('Ed25519', key, signatureBuffer, dataToVerify);
+      if (isValid) {
+        toast.success('Signature is valid!');
+      } else {
+        toast.error('Signature is INVALID!');
+      }
+    } catch (error) {
+      toast.error('Verification failed. Check public key or signature format.');
+      console.error(error);
+    } finally {
+      setIsProcessing(false);
+      setProcessingAction(null);
     }
   };
   
@@ -207,5 +317,7 @@ export function useEd25519() {
     handleFileChange,
     handleSign,
     handleCopy,
+    handleVerify,
+    processingAction,
   }
 }

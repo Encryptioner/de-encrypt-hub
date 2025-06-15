@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -18,7 +17,7 @@ export function Ed25519Tool() {
     inputType, setInputType,
     textInput, setTextInput,
     file,
-    signature,
+    signature, setSignature,
     isProcessing,
     animatedSignature,
     showSteps, setShowSteps,
@@ -27,6 +26,8 @@ export function Ed25519Tool() {
     handleFileChange,
     handleSign,
     handleCopy,
+    handleVerify,
+    processingAction,
   } = useEd25519();
   
   return (
@@ -96,8 +97,12 @@ export function Ed25519Tool() {
 
         <div className="flex flex-col sm:flex-row gap-4">
           <Button onClick={handleSign} className="flex-1" disabled={isProcessing || !privateKey}>
-            {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isProcessing ? 'Signing...' : 'Sign with Private Key'}
+            {isProcessing && processingAction === 'sign' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isProcessing && processingAction === 'sign' ? 'Signing...' : 'Sign with Private Key'}
+          </Button>
+          <Button onClick={handleVerify} variant="secondary" className="flex-1" disabled={isProcessing || !publicKey || !signature}>
+            {isProcessing && processingAction === 'verify' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isProcessing && processingAction === 'verify' ? 'Verifying...' : 'Verify with Public Key'}
           </Button>
         </div>
         
@@ -110,18 +115,23 @@ export function Ed25519Tool() {
             </div>
         )}
 
-        {(signature || (isProcessing && !showSteps)) && (
-            <div className="grid gap-2 pt-4 border-t">
-                <div className="flex justify-between items-center">
-                    <Label htmlFor="ed-signature">Generated Signature (Base64)</Label>
-                    <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard" disabled={isProcessing || !signature}>
-                        <Copy className="w-4 h-4" />
-                        <span className="sr-only">Copy</span>
-                    </Button>
-                </div>
-                <Textarea id="ed-signature" readOnly value={isProcessing && !showSteps ? animatedSignature : signature} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
+        <div className="grid gap-2 pt-4 border-t">
+            <div className="flex justify-between items-center">
+                <Label htmlFor="ed-signature">Signature (Base64)</Label>
+                <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard" disabled={!signature}>
+                    <Copy className="w-4 h-4" />
+                    <span className="sr-only">Copy</span>
+                </Button>
             </div>
-        )}
+            <Textarea
+              id="ed-signature"
+              placeholder="Paste a signature to verify, or see the generated one here."
+              value={(isProcessing && processingAction === 'sign' && !showSteps) ? animatedSignature : signature}
+              onChange={(e) => setSignature(e.target.value)}
+              className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs"
+              disabled={isProcessing}
+            />
+        </div>
         
       </div>
        <p className="text-xs text-muted-foreground w-full text-center pt-6">
