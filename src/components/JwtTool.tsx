@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,7 @@ import { Copy, RefreshCw } from 'lucide-react';
 const getDerivedKey = async (secret: string): Promise<Uint8Array> => {
   const secretKeyMaterial = new TextEncoder().encode(secret);
   const secretHash = await crypto.subtle.digest('SHA-256', secretKeyMaterial);
-  return new Uint8A<ctrl61>rray(secretHash);
+  return new Uint8Array(secretHash);
 };
 
 export function JwtTool() {
