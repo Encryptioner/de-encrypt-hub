@@ -3,166 +3,37 @@ import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from 'sonner';
 import { Copy, Key, FileText, File, Loader2 } from 'lucide-react';
 import { Input } from './ui/input';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-
-// Helper to convert ArrayBuffer to Base64
-function arrayBufferToBase64(buffer: ArrayBuffer) {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return window.btoa(binary);
-}
-
-// Helper to convert Base64 to ArrayBuffer
-function base64ToArrayBuffer(base64: string) {
-  const binary_string = window.atob(base64);
-  const len = binary_string.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binary_string.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
+import { Switch } from './ui/switch';
+import { useEd25519 } from '@/hooks/useEd25519';
+import { CipherVisualization } from './CipherVisualization';
 
 export function Ed25519Tool() {
-  const [publicKey, setPublicKey] = React.useState('');
-  const [privateKey, setPrivateKey] = React.useState('');
-  const [inputType, setInputType] = React.useState<'text' | 'file'>('text');
-  const [textInput, setTextInput] = React.useState('This is a test message.');
-  const [file, setFile] = React.useState<globalThis.File | null>(null);
-  const [fileBuffer, setFileBuffer] = React.useState<ArrayBuffer | null>(null);
-  const [signature, setSignature] = React.useState('');
-  const [isProcessing, setIsProcessing] = React.useState(false);
-  const [animatedSignature, setAnimatedSignature] = React.useState('');
+  const {
+    publicKey, setPublicKey,
+    privateKey, setPrivateKey,
+    inputType, setInputType,
+    textInput, setTextInput,
+    file,
+    signature,
+    isProcessing,
+    animatedSignature,
+    showSteps, setShowSteps,
+    visualizationSteps,
+    handleGenerateKeys,
+    handleFileChange,
+    handleSign,
+    handleCopy,
+  } = useEd25519();
   
-  React.useEffect(() => {
-    if (isProcessing) {
-      const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
-      const interval = setInterval(() => {
-        let result = '';
-        for (let i = 0; i < 88; i++) { // Ed25519 signatures are 64 bytes -> 88 Base64 chars
-          result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
-        }
-        setAnimatedSignature(result);
-      }, 50);
-
-      return () => clearInterval(interval);
-    }
-  }, [isProcessing]);
-
-  const handleGenerateKeys = async () => {
-    try {
-      const keyPair = await window.crypto.subtle.generateKey(
-        { name: 'Ed25519' },
-        true,
-        ['sign', 'verify']
-      );
-      
-      // Type guard to ensure we have a CryptoKeyPair
-      if (!('publicKey' in keyPair) || !('privateKey' in keyPair)) {
-        throw new Error("Key generation did not return a valid CryptoKeyPair.");
-      }
-
-      const spkiPubKey = await window.crypto.subtle.exportKey('spki', keyPair.publicKey);
-      const pkcs8PrivKey = await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
-
-      setPublicKey(arrayBufferToBase64(spkiPubKey));
-      setPrivateKey(arrayBufferToBase64(pkcs8PrivKey));
-      setSignature('');
-      toast.success('Ed25519 key pair generated!');
-    } catch (error) {
-      toast.error('Failed to generate keys. Your browser may not support Ed25519.');
-      console.error(error);
-    }
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const buffer = e.target?.result;
-        if (buffer instanceof ArrayBuffer) {
-          setFileBuffer(buffer);
-          setSignature('');
-          toast.success(`File "${selectedFile.name}" loaded.`);
-        } else {
-          toast.error("Failed to read file as ArrayBuffer.");
-        }
-      };
-      reader.onerror = () => {
-        toast.error("Error reading file.");
-      };
-      reader.readAsArrayBuffer(selectedFile);
-    }
-  };
-
-  const handleSign = async () => {
-    if (!privateKey) {
-      toast.error('Private key is required to sign.');
-      return;
-    }
-
-    let dataToSign: ArrayBuffer;
-    if (inputType === 'text') {
-      if (!textInput) {
-        toast.error('Input message is required.');
-        return;
-      }
-      dataToSign = new TextEncoder().encode(textInput);
-    } else {
-      if (!fileBuffer) {
-        toast.error('A file must be loaded first.');
-        return;
-      }
-      dataToSign = fileBuffer;
-    }
-
-    setIsProcessing(true);
-    setSignature('');
-    try {
-      await new Promise(res => setTimeout(res, 500)); // artifical delay
-      const privateKeyBuffer = base64ToArrayBuffer(privateKey);
-      const key = await window.crypto.subtle.importKey(
-        'pkcs8',
-        privateKeyBuffer,
-        { name: 'Ed25519' },
-        true,
-        ['sign']
-      );
-      const sig = await window.crypto.subtle.sign(
-        'Ed25519',
-        key,
-        dataToSign
-      );
-      setSignature(arrayBufferToBase64(sig));
-      toast.success('Data signed successfully!');
-    } catch (error) {
-      toast.error('Signing failed. Ensure the private key is correct.');
-      console.error(error);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-  
-  const handleCopy = (text: string) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard!');
-  };
-
   return (
     <>
       <div className="space-y-6 pt-4">
         <div className="flex justify-end">
           <Button onClick={handleGenerateKeys} variant="outline" disabled={isProcessing}>
-            <Key className="mr-2" />
+            <Key className="mr-2 h-4 w-4" />
             Generate New Ed25519 Key Pair
           </Button>
         </div>
@@ -171,23 +42,21 @@ export function Ed25519Tool() {
           <div className="grid gap-2">
             <Label htmlFor="ed-public-key">Public Key (Base64)</Label>
             <Textarea id="ed-public-key" placeholder='Base64-encoded public key...' value={publicKey} onChange={(e) => setPublicKey(e.target.value)} className="min-h-[120px] resize-y font-mono text-xs" disabled={isProcessing}/>
-            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(publicKey)} disabled={isProcessing}><Copy className="mr-2"/> Copy Public Key</Button>
+            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(publicKey)} disabled={isProcessing || !publicKey}><Copy className="mr-2 h-4 w-4"/> Copy Public Key</Button>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="ed-private-key">Private Key (Base64)</Label>
             <Textarea id="ed-private-key" placeholder='Base64-encoded private key...' value={privateKey} onChange={(e) => setPrivateKey(e.target.value)} className="min-h-[120px] resize-y font-mono text-xs" disabled={isProcessing}/>
-            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(privateKey)} disabled={isProcessing}><Copy className="mr-2"/> Copy Private Key</Button>
+            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(privateKey)} disabled={isProcessing || !privateKey}><Copy className="mr-2 h-4 w-4"/> Copy Private Key</Button>
           </div>
         </div>
 
         <div className="grid gap-2">
           <Label>Data to Sign</Label>
            <RadioGroup
-                defaultValue="text"
                 value={inputType}
                 onValueChange={(value) => {
                     setInputType(value as 'text' | 'file');
-                    setSignature('');
                 }}
                 className="flex items-center gap-4 py-2"
                 disabled={isProcessing}
@@ -207,16 +76,21 @@ export function Ed25519Tool() {
                     id="ed-input"
                     placeholder="The message to sign..."
                     value={textInput}
-                    onChange={(e) => { setTextInput(e.target.value); setSignature(''); }}
+                    onChange={(e) => { setTextInput(e.target.value); }}
                     className="min-h-[100px] resize-y"
                     disabled={isProcessing}
                 />
             ) : (
                 <div className="grid gap-2">
-                    <Input id="ed-file-input" type="file" onChange={handleFileChange} disabled={isProcessing} />
+                    <Input id="ed-file-input" type="file" onChange={handleFileChange} disabled={isProcessing} key={file?.name || ''} />
                     {file && <p className="text-sm text-muted-foreground">Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)</p>}
                 </div>
             )}
+        </div>
+        
+        <div className="flex items-center space-x-2 rounded-lg border p-4">
+            <Switch id="ed-slow-mode" checked={showSteps} onCheckedChange={setShowSteps} disabled={isProcessing} />
+            <Label htmlFor="ed-slow-mode">Show Step-by-Step Visualization</Label>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
@@ -226,16 +100,25 @@ export function Ed25519Tool() {
           </Button>
         </div>
         
-        {(signature || isProcessing) && (
+        {showSteps && visualizationSteps.length > 0 && (
+            <div className="pt-4 border-t">
+              <CipherVisualization
+                steps={visualizationSteps}
+                principle="Ed25519 is a high-speed, high-security digital signature algorithm based on elliptic curve cryptography. It provides strong guarantees of authenticity and integrity."
+              />
+            </div>
+        )}
+
+        {(signature || (isProcessing && !showSteps)) && (
             <div className="grid gap-2 pt-4 border-t">
                 <div className="flex justify-between items-center">
                     <Label htmlFor="ed-signature">Generated Signature (Base64)</Label>
-                    <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard" disabled={isProcessing}>
+                    <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard" disabled={isProcessing || !signature}>
                         <Copy className="w-4 h-4" />
                         <span className="sr-only">Copy</span>
                     </Button>
                 </div>
-                <Textarea id="ed-signature" readOnly value={isProcessing ? animatedSignature : signature} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
+                <Textarea id="ed-signature" readOnly value={isProcessing && !showSteps ? animatedSignature : signature} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
             </div>
         )}
         

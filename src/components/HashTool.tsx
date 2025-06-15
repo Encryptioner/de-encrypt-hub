@@ -1,13 +1,15 @@
 
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { hash, HashAlgorithm } from '@/lib/crypto';
+import { type HashAlgorithm } from '@/lib/crypto';
 import { Copy, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Switch } from "@/components/ui/switch";
+import { useHash } from '@/hooks/useHash';
+import { CipherVisualization } from './CipherVisualization';
 
 const hashAlgorithms: { name: string; value: HashAlgorithm }[] = [
     { name: 'SHA-256', value: 'SHA-256' },
@@ -17,61 +19,17 @@ const hashAlgorithms: { name: string; value: HashAlgorithm }[] = [
 ];
 
 export function HashTool() {
-  const [input, setInput] = useState('');
-  const [algorithm, setAlgorithm] = useState<HashAlgorithm>('SHA-256');
-  const [output, setOutput] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [animatedOutput, setAnimatedOutput] = useState('');
-
-  useEffect(() => {
-    if (isProcessing) {
-      const randomChars = 'abcdef0123456789';
-      let length = 64; // Corresponds to SHA-256
-      if (algorithm === 'SHA-512') length = 128;
-      if (algorithm === 'SHA-1') length = 40;
-      if (algorithm === 'MD5') length = 32;
-
-      const interval = setInterval(() => {
-        let result = '';
-        for (let i = 0; i < length; i++) {
-          result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
-        }
-        setAnimatedOutput(result);
-      }, 50);
-
-      return () => clearInterval(interval);
-    }
-  }, [isProcessing, algorithm]);
-
-  const handleHash = async () => {
-    if (!input) {
-      toast.error('Input cannot be empty.');
-      return;
-    }
-    setIsProcessing(true);
-    setOutput('');
-    try {
-      // Artificial delay for animation
-      await new Promise(res => setTimeout(res, 500));
-      const result = await hash(input, algorithm);
-      setOutput(result);
-      toast.success('Hashed successfully!');
-    } catch (error: any) {
-      toast.error(error.message || 'Hashing failed.');
-      setOutput('');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleCopy = () => {
-    if (!output) {
-      toast.error('Nothing to copy.');
-      return;
-    }
-    navigator.clipboard.writeText(output);
-    toast.success('Result copied to clipboard!');
-  };
+  const {
+    input, setInput,
+    algorithm, setAlgorithm,
+    output,
+    isProcessing,
+    animatedOutput,
+    showSteps, setShowSteps,
+    visualizationSteps,
+    handleHash,
+    handleCopy,
+  } = useHash();
 
   return (
     <>
@@ -110,7 +68,24 @@ export function HashTool() {
             </Button>
         </div>
 
-        {(output || isProcessing) && (
+        <div className="flex items-center space-x-2 rounded-lg border p-4">
+            <Switch
+                id="slow-mode-switch"
+                checked={showSteps}
+                onCheckedChange={setShowSteps}
+                disabled={isProcessing}
+            />
+            <Label htmlFor="slow-mode-switch">Show Step-by-Step Visualization</Label>
+        </div>
+
+        {showSteps && visualizationSteps.length > 0 && (
+            <CipherVisualization
+              steps={visualizationSteps}
+              principle="Hashing is a one-way function that creates a unique, fixed-size fingerprint of data. It's used to verify data integrity, not for encryption."
+            />
+        )}
+
+        {(output || (isProcessing && !showSteps)) && (
             <div className="grid gap-2 pt-4 border-t">
             <div className="flex justify-between items-center">
                 <Label htmlFor="hash-output">Generated Hash</Label>
@@ -122,7 +97,7 @@ export function HashTool() {
             <Textarea
                 id="hash-output"
                 readOnly
-                value={isProcessing ? animatedOutput : output}
+                value={isProcessing && !showSteps ? animatedOutput : output}
                 className="min-h-[80px] resize-y bg-muted/50 font-mono text-sm"
                 placeholder={isProcessing ? '...' : ''}
             />

@@ -39,7 +39,7 @@ export function useCipher({ mode }: UseCipherProps) {
     }
   };
   
-  const runSlowAesEncryption = async (data: string | ArrayBuffer) => {
+  const runSlowEncryption = async (data: string | ArrayBuffer) => {
     if (!key) {
       toast.error('Secret key cannot be empty.');
       return;
@@ -48,14 +48,26 @@ export function useCipher({ mode }: UseCipherProps) {
     setOutput('');
     setVisualizationSteps([]);
 
-    const aesStepsConfig: Omit<VisualizationStep, 'data' | 'status'>[] = [
-      { title: '1. Prepare Data & Key', explanation: 'The input data and your secret key are prepared for the encryption process. The key is fundamental, as it controls the entire transformation process.' },
-      { title: '2. Initial Round (AddRoundKey)', explanation: 'The data is combined with a part of the "expanded" secret key using a simple XOR operation. This is the first step in obscuring the original data.' },
-      { title: '3. Main Rounds (SubBytes, ShiftRows, MixColumns, AddRoundKey)', explanation: 'The data undergoes multiple rounds (10 for AES-128) of complex transformations. Each step systematically substitutes, shuffles, and mixes the data, with the secret key guiding the transformations in each round. This is where the real strength of AES comes from.' },
-      { title: '4. Final Round', explanation: 'A final, slightly different round of transformations is applied to the data.' },
-      { title: '5. Generate Ciphertext', explanation: 'The fully transformed data is now the final ciphertext, presented in Base64 format. It is computationally infeasible to reverse this without the original secret key.' },
-    ];
+    const isStreamCipher = ['Rabbit', 'RC4', 'RC4Drop'].includes(algorithm);
+    let stepsConfig: Omit<VisualizationStep, 'data' | 'status'>[];
 
+    if (isStreamCipher) {
+      stepsConfig = [
+        { title: '1. Prepare Data & Key', explanation: 'The process starts with your data and the secret key. For a stream cipher, the key is the crucial "seed" for generating a unique data stream.' },
+        { title: '2. Initialize Keystream Generator', explanation: 'The secret key is used to set up the complex internal state of a keystream generator. This is a highly sensitive process where the key dictates the generator\'s output.' },
+        { title: '3. Generate Keystream', explanation: 'The generator produces a stream of pseudo-random bytes, called the keystream. Given the same key, it will always produce the exact same keystream, which is why the key is so important.' },
+        { title: '4. XOR with Plaintext', explanation: 'The plaintext is combined with the keystream using a simple XOR operation. This is surprisingly secure because the keystream is secret. To decrypt, the recipient generates the same keystream (using the same key) and XORs it against the ciphertext to reveal the original data.' },
+        { title: '5. Final Ciphertext', explanation: 'The result of the XOR operation is the final ciphertext. It is computationally infeasible to reverse this without the original secret key.' },
+      ];
+    } else { // Block Ciphers
+      stepsConfig = [
+        { title: '1. Prepare Data & Key', explanation: 'The input data and your secret key are prepared. In a symmetric block cipher, this key is used to control every step of the transformation.' },
+        { title: '2. Key Expansion/Scheduling', explanation: 'The secret key is expanded into a series of different "round keys". Using a different key for each round of encryption is a critical feature that dramatically increases the algorithm\'s security.' },
+        { title: '3. Main Rounds of Transformation', explanation: 'The data is processed in fixed-size blocks through multiple rounds of complex transformations (like substitution and permutation). Each round uses a different round key to systematically scramble the data based on the original secret key.' },
+        { title: '4. Final Ciphertext', explanation: 'After all rounds are complete, the fully transformed data is the final ciphertext. It is presented here in Base64 format.' },
+      ];
+    }
+    
     let dataForEncryption: string;
     let dataForVisualization: string;
 
@@ -64,41 +76,33 @@ export function useCipher({ mode }: UseCipherProps) {
       dataForVisualization = data;
     } else {
       dataForEncryption = arrayBufferToBase64(data);
-      // Show a snippet for files, as Base64 can be very long
       dataForVisualization = dataForEncryption.substring(0, 44) + '...';
     }
 
     const textToHex = (text: string) => text.split('').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
     const hexScramble = (hex: string) => hex.split('').sort(() => 0.5 - Math.random()).join('');
-
     let currentHex = textToHex(dataForVisualization.substring(0, 32));
 
-    const initialSteps: VisualizationStep[] = aesStepsConfig.map(s => ({
-      ...s,
-      data: '',
-      status: 'pending'
-    }));
+    const initialSteps: VisualizationStep[] = stepsConfig.map(s => ({ ...s, data: '', status: 'pending' }));
     
     for (let i = 0; i < initialSteps.length; i++) {
         await new Promise(res => setTimeout(res, 100));
-        // Set status to processing
         setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'processing', data: '...' } : s)));
         await new Promise(res => setTimeout(res, 800));
 
-        currentHex = hexScramble(currentHex); // Simulate data transformation
+        currentHex = hexScramble(currentHex);
         let stepData: string;
 
         if (i === 0) {
-            stepData = `Input: "${dataForVisualization.substring(0, 48)}"`;
+            stepData = `Input: "${dataForVisualization.substring(0, 48)}..."`;
         } else if (i < initialSteps.length - 1) {
-            stepData = currentHex;
+            stepData = `Simulating transformation step ${i + 1}... (${currentHex.substring(0, 32)})`;
         } else {
-            const finalResult = encrypt(dataForEncryption, key, 'AES');
+            const finalResult = encrypt(dataForEncryption, key, algorithm);
             stepData = finalResult;
             setOutput(finalResult);
         }
         
-        // Set status to done
         setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
     }
 
@@ -106,7 +110,7 @@ export function useCipher({ mode }: UseCipherProps) {
     toast.success("Slow-mode encryption visualization complete!");
   };
   
-  const runSlowAesDecryption = async (data: string) => {
+  const runSlowDecryption = async (data: string) => {
     if (!key) {
       toast.error('Secret key cannot be empty.');
       return;
@@ -115,19 +119,27 @@ export function useCipher({ mode }: UseCipherProps) {
     setOutput('');
     setVisualizationSteps([]);
 
-    const aesStepsConfig: Omit<VisualizationStep, 'data' | 'status'>[] = [
-        { title: '1. Prepare Ciphertext & Key', explanation: 'The Base64 ciphertext and your secret key are loaded. The key must be identical to the one used for encryption.' },
-        { title: '2. Inverse Final Round', explanation: 'The final encryption round is reversed. This involves using the same secret key to undo the last set of transformations.' },
-        { title: '3. Inverse Main Rounds', explanation: 'The main encryption rounds are reversed one by one. Each step (Inverse ShiftRows, Inverse SubBytes, AddRoundKey, Inverse MixColumns) uses the secret key to precisely undo the scrambling that occurred during encryption.' },
-        { title: '4. Inverse Initial Round', explanation: 'The first encryption step is undone, finally revealing the original data.' },
-        { title: '5. Final Plaintext', explanation: 'The fully reversed data is now the original plaintext message.' },
-    ];
+    const isStreamCipher = ['Rabbit', 'RC4', 'RC4Drop'].includes(algorithm);
+    let stepsConfig: Omit<VisualizationStep, 'data' | 'status'>[];
 
-    const initialSteps: VisualizationStep[] = aesStepsConfig.map(s => ({
-      ...s,
-      data: '',
-      status: 'pending'
-    }));
+    if (isStreamCipher) {
+       stepsConfig = [
+        { title: '1. Prepare Ciphertext & Key', explanation: 'The ciphertext and secret key are loaded. To decrypt, the key must be identical to the one used for encryption.' },
+        { title: '2. Initialize Keystream Generator', explanation: 'The secret key is used to initialize the keystream generator to the exact same state it was in during encryption. This is why the key is critical.' },
+        { title: '3. Generate Keystream', explanation: 'The generator produces the same pseudo-random keystream as before. This is the "key" to unlocking the data.' },
+        { title: '4. XOR with Ciphertext', explanation: 'The ciphertext is XORed with the keystream. Because XORing the same value twice cancels it out, this operation precisely reverses the encryption, revealing the original plaintext.' },
+        { title: '5. Final Plaintext', explanation: 'The fully reversed data is now the original plaintext message.' },
+      ];
+    } else { // Block Ciphers
+      stepsConfig = [
+        { title: '1. Prepare Ciphertext & Key', explanation: 'The Base64 ciphertext and your secret key are loaded. The key must be identical to the one used for encryption to reverse the process.' },
+        { title: '2. Key Expansion/Scheduling', explanation: 'The same key expansion process is performed to generate the same set of round keys used during encryption. For decryption, these keys are typically used in reverse order.' },
+        { title: '3. Inverse Main Rounds', explanation: 'The decryption process applies the inverse of the encryption transformations, round by round. Each inverse step uses the corresponding round key to systematically unscramble the data.' },
+        { title: '4. Final Plaintext', explanation: 'After the final inverse round, the original plaintext is revealed.' },
+    ];
+    }
+    
+    const initialSteps: VisualizationStep[] = stepsConfig.map(s => ({ ...s, data: '', status: 'pending' }));
     
     for (let i = 0; i < initialSteps.length; i++) {
         await new Promise(res => setTimeout(res, 100));
@@ -136,9 +148,11 @@ export function useCipher({ mode }: UseCipherProps) {
 
         let stepData: string;
 
-        if (i === initialSteps.length - 1) {
+        if (i < initialSteps.length - 1) {
+            stepData = `Simulating inverse operation... ${Math.random().toString(36).substring(2, 10)}`;
+        } else {
             try {
-                const finalResult = decrypt(data, key, 'AES');
+                const finalResult = decrypt(data, key, algorithm);
                 stepData = finalResult.substring(0, 64) + (finalResult.length > 64 ? '...' : '');
                 setOutput(finalResult);
             } catch (e: any) {
@@ -146,8 +160,6 @@ export function useCipher({ mode }: UseCipherProps) {
                 setOutput(stepData);
                 toast.error(`Decryption failed: ${e.message}`);
             }
-        } else {
-            stepData = `Simulating inverse operation... ${Math.random().toString(36).substring(2, 10)}`;
         }
         
         setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
@@ -183,9 +195,9 @@ export function useCipher({ mode }: UseCipherProps) {
       originalData = buffer;
     }
     
-    if (showSteps && algorithm === 'AES') {
+    if (showSteps) {
       // The slow mode needs the original, un-encoded data for files
-      runSlowAesEncryption(inputType === 'file' ? (originalData as ArrayBuffer) : (originalData as string));
+      runSlowEncryption(inputType === 'file' ? (originalData as ArrayBuffer) : (originalData as string));
       return;
     }
     
@@ -211,12 +223,12 @@ export function useCipher({ mode }: UseCipherProps) {
       return;
     }
 
-    if (showSteps && algorithm === 'AES') {
+    if (showSteps) {
       if (inputType === 'file') {
         toast.warning('Slow mode is not supported for file decryption yet.');
         return;
       }
-      runSlowAesDecryption(input);
+      runSlowDecryption(input);
       return;
     }
 

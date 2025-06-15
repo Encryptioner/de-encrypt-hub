@@ -1,0 +1,211 @@
+
+import * as React from 'react';
+import { toast } from 'sonner';
+import { type VisualizationStep } from '@/hooks/useCipher';
+
+// Helper to convert ArrayBuffer to Base64
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
+
+// Helper to convert Base64 to ArrayBuffer
+function base64ToArrayBuffer(base64: string) {
+  const binary_string = window.atob(base64);
+  const len = binary_string.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary_string.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+export function useEd25519() {
+  const [publicKey, setPublicKey] = React.useState('');
+  const [privateKey, setPrivateKey] = React.useState('');
+  const [inputType, setInputType] = React.useState<'text' | 'file'>('text');
+  const [textInput, setTextInput] = React.useState('This is a test message.');
+  const [file, setFile] = React.useState<File | null>(null);
+  const [fileBuffer, setFileBuffer] = React.useState<ArrayBuffer | null>(null);
+  const [signature, setSignature] = React.useState('');
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [animatedSignature, setAnimatedSignature] = React.useState('');
+  const [showSteps, setShowSteps] = React.useState(false);
+  const [visualizationSteps, setVisualizationSteps] = React.useState<VisualizationStep[]>([]);
+  
+  React.useEffect(() => {
+    if (isProcessing && !showSteps) {
+      const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+      const interval = setInterval(() => {
+        let result = '';
+        for (let i = 0; i < 88; i++) { // Ed25519 signatures are 64 bytes -> 88 Base64 chars
+          result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+        }
+        setAnimatedSignature(result);
+      }, 50);
+
+      return () => clearInterval(interval);
+    }
+  }, [isProcessing, showSteps]);
+
+  const handleGenerateKeys = async () => {
+    try {
+      const keyPair = await window.crypto.subtle.generateKey(
+        { name: 'Ed25519' }, true, ['sign', 'verify']
+      );
+      
+      if (!('publicKey' in keyPair) || !('privateKey' in keyPair)) {
+        throw new Error("Key generation did not return a valid CryptoKeyPair.");
+      }
+
+      const spkiPubKey = await window.crypto.subtle.exportKey('spki', keyPair.publicKey);
+      const pkcs8PrivKey = await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+
+      setPublicKey(arrayBufferToBase64(spkiPubKey));
+      setPrivateKey(arrayBufferToBase64(pkcs8PrivKey));
+      setSignature('');
+      toast.success('Ed25519 key pair generated!');
+    } catch (error) {
+      toast.error('Failed to generate keys. Your browser may not support Ed25519.');
+      console.error(error);
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const buffer = e.target?.result;
+        if (buffer instanceof ArrayBuffer) {
+          setFileBuffer(buffer);
+          setSignature('');
+          toast.success(`File "${selectedFile.name}" loaded.`);
+        } else {
+          toast.error("Failed to read file as ArrayBuffer.");
+        }
+      };
+      reader.onerror = () => toast.error("Error reading file.");
+      reader.readAsArrayBuffer(selectedFile);
+    }
+  };
+
+  const runSlowSign = async (dataToSign: ArrayBuffer) => {
+    setIsProcessing(true);
+    setSignature('');
+    setVisualizationSteps([]);
+
+    const steps = [
+        { title: '1. Load Data & Private Key', explanation: 'The signing process begins with your data and your secret Ed25519 private key. This key is the foundation of the signature and must be kept absolutely secret.' },
+        { title: '2. Hash Message (SHA-512)', explanation: 'The Ed25519 algorithm first hashes the entire message using SHA-512. This creates a unique, fixed-size fingerprint of your data, ensuring that even a tiny change would be detected.' },
+        { title: '3. Sign with Private Key', explanation: 'The algorithm then uses your private key and the message hash to perform calculations on a special elliptic curve (Curve25519). This generates a digital signature that is mathematically linked to both your key and your data.' },
+        { title: '4. Final Signature', explanation: 'This is the final signature. It can be shared publicly with your public key and the original data. Anyone can verify it, but only someone with your private key could have created it.' },
+    ];
+    
+    const initialSteps: VisualizationStep[] = steps.map(s => ({ ...s, data: '', status: 'pending' }));
+    
+    try {
+        for (let i = 0; i < initialSteps.length; i++) {
+            await new Promise(res => setTimeout(res, 100));
+            setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'processing', data: '...' } : s)));
+            await new Promise(res => setTimeout(res, 800));
+
+            let stepData = '';
+            if (i === 0) {
+                stepData = `Private key and data loaded.`;
+            } else if (i === 1) {
+                const hashBuffer = await window.crypto.subtle.digest('SHA-512', dataToSign);
+                stepData = `Message Hash: ${arrayBufferToBase64(hashBuffer).substring(0, 44)}...`;
+            } else if (i === 2) {
+                stepData = `Signing hash with private key using elliptic curve math...`;
+            } else {
+                const privateKeyBuffer = base64ToArrayBuffer(privateKey);
+                const key = await window.crypto.subtle.importKey('pkcs8', privateKeyBuffer, { name: 'Ed25519' }, true, ['sign']);
+                const sig = await window.crypto.subtle.sign('Ed25519', key, dataToSign);
+                const finalSignature = arrayBufferToBase64(sig);
+                stepData = finalSignature;
+                setSignature(finalSignature);
+            }
+            
+            setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
+        }
+        toast.success("Signing visualization complete!");
+    } catch (e: any) {
+        toast.error('Signing failed. Ensure the private key is correct.');
+    } finally {
+        setIsProcessing(false);
+    }
+  };
+
+  const handleSign = async () => {
+    if (!privateKey) {
+      toast.error('Private key is required to sign.');
+      return;
+    }
+
+    let dataToSign: ArrayBuffer;
+    if (inputType === 'text') {
+      if (!textInput) {
+        toast.error('Input message is required.');
+        return;
+      }
+      dataToSign = new TextEncoder().encode(textInput);
+    } else {
+      if (!fileBuffer) {
+        toast.error('A file must be loaded first.');
+        return;
+      }
+      dataToSign = fileBuffer;
+    }
+
+    if (showSteps) {
+        await runSlowSign(dataToSign);
+        return;
+    }
+
+    setIsProcessing(true);
+    setSignature('');
+    try {
+      await new Promise(res => setTimeout(res, 500)); // artifical delay
+      const privateKeyBuffer = base64ToArrayBuffer(privateKey);
+      const key = await window.crypto.subtle.importKey('pkcs8', privateKeyBuffer, { name: 'Ed25519' }, true, ['sign']);
+      const sig = await window.crypto.subtle.sign('Ed25519', key, dataToSign);
+      setSignature(arrayBufferToBase64(sig));
+      toast.success('Data signed successfully!');
+    } catch (error) {
+      toast.error('Signing failed. Ensure the private key is correct.');
+      console.error(error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
+  const handleCopy = (text: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
+  
+  return {
+    publicKey, setPublicKey,
+    privateKey, setPrivateKey,
+    inputType, setInputType,
+    textInput, setTextInput,
+    file, setFile,
+    fileBuffer,
+    signature, setSignature,
+    isProcessing,
+    animatedSignature,
+    showSteps, setShowSteps,
+    visualizationSteps,
+    handleGenerateKeys,
+    handleFileChange,
+    handleSign,
+    handleCopy,
+  }
+}

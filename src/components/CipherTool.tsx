@@ -54,7 +54,6 @@ export function CipherTool({ mode }: CipherToolProps) {
   }, [isProcessing, inputType, input, showSteps]);
 
   const algorithmData = content.algorithms.find(a => a.value === algorithm);
-  const supportsSlowMode = algorithm === 'AES';
 
   return (
     <>
@@ -124,22 +123,17 @@ export function CipherTool({ mode }: CipherToolProps) {
             </div>
         </div>
 
-        {supportsSlowMode && (
-            <div className="flex items-center space-x-2 rounded-lg border p-4">
-                <Switch
-                    id="slow-mode-switch"
-                    checked={showSteps}
-                    onCheckedChange={(checked) => {
-                        setShowSteps(checked);
-                    }}
-                    disabled={isProcessing}
-                />
-                <Label htmlFor="slow-mode-switch" className="flex flex-col">
-                    Show Step-by-Step Visualization
-                    <span className="text-xs font-normal text-muted-foreground">(Only for AES)</span>
-                </Label>
-            </div>
-        )}
+        <div className="flex items-center space-x-2 rounded-lg border p-4">
+            <Switch
+                id="slow-mode-switch"
+                checked={showSteps}
+                onCheckedChange={setShowSteps}
+                disabled={isProcessing}
+            />
+            <Label htmlFor="slow-mode-switch">
+                Show Step-by-Step Visualization
+            </Label>
+        </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
             {mode === 'encrypt' ? (
@@ -159,32 +153,34 @@ export function CipherTool({ mode }: CipherToolProps) {
             <CipherVisualization steps={visualizationSteps} principle={algorithmData?.principle} />
         )}
 
-        <div className="grid gap-2 pt-4">
-            <div className="flex justify-between items-center">
-                <Label htmlFor="output">Result</Label>
-                <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" onClick={handleDownload} title="Download Result" disabled={isProcessing}>
-                        <Download className="w-4 h-4" />
-                        <span className="sr-only">Download</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={handleSwap} title="Use as Input" disabled={isProcessing}>
-                        <RefreshCw className="w-4 h-4" />
-                        <span className="sr-only">Use as Input</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={handleCopy} title="Copy to Clipboard" disabled={isProcessing}>
-                        <Copy className="w-4 h-4" />
-                        <span className="sr-only">Copy</span>
-                    </Button>
-                </div>
-            </div>
-            <Textarea
-                id="output"
-                readOnly
-                value={isProcessing && inputType === 'text' && !showSteps ? animatedOutput : output}
-                className="min-h-[120px] resize-y bg-muted/50"
-                placeholder={isProcessing ? (inputType === 'file' ? 'Processing file...' : '...') : 'Encrypted or decrypted output will appear here.'}
-            />
-        </div>
+        {(output || (isProcessing && !showSteps)) && (
+          <div className="grid gap-2 pt-4 border-t">
+              <div className="flex justify-between items-center">
+                  <Label htmlFor="output">Result</Label>
+                  <div className="flex gap-2">
+                      <Button variant="ghost" size="icon" onClick={handleDownload} title="Download Result" disabled={isProcessing || !output}>
+                          <Download className="w-4 h-4" />
+                          <span className="sr-only">Download</span>
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={handleSwap} title="Use as Input" disabled={isProcessing || !output}>
+                          <RefreshCw className="w-4 h-4" />
+                          <span className="sr-only">Use as Input</span>
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={handleCopy} title="Copy to Clipboard" disabled={isProcessing || !output}>
+                          <Copy className="w-4 h-4" />
+                          <span className="sr-only">Copy</span>
+                      </Button>
+                  </div>
+              </div>
+              <Textarea
+                  id="output"
+                  readOnly
+                  value={isProcessing && inputType === 'text' && !showSteps ? animatedOutput : output}
+                  className="min-h-[120px] resize-y bg-muted/50"
+                  placeholder={isProcessing ? (inputType === 'file' ? 'Processing file...' : '...') : 'Encrypted or decrypted output will appear here.'}
+              />
+          </div>
+        )}
       </div>
       <p className="text-xs text-muted-foreground w-full text-center pt-6">{algorithmData?.description}</p>
     </>
