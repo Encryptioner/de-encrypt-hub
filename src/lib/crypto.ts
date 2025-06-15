@@ -1,4 +1,3 @@
-
 import CryptoJS from 'crypto-js';
 
 const algorithms = {
@@ -33,4 +32,23 @@ export const decrypt = (ciphertext: string, key: string, algorithm: Algorithm): 
   } catch (e) {
     throw new Error("Decryption failed. The data may be corrupted or the key is incorrect.");
   }
+};
+
+const bufferToHex = (buffer: ArrayBuffer): string => {
+  return [...new Uint8Array(buffer)]
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+};
+
+export type HashAlgorithm = 'SHA-1' | 'SHA-256' | 'SHA-512' | 'MD5';
+
+export const hash = async (text: string, algorithm: HashAlgorithm): Promise<string> => {
+  if (algorithm === 'MD5') {
+    return CryptoJS.MD5(text).toString(CryptoJS.enc.Hex);
+  }
+  
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest(algorithm, data);
+  return bufferToHex(hashBuffer);
 };

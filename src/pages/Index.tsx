@@ -13,7 +13,7 @@ const Index = () => {
             <h1 className="text-3xl font-bold text-foreground">{content.title}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <a href="https://github.com/lovable-community" target="_blank" rel="noopener noreferrer" aria-label="GitHub Repository">
+          <a href="https://encryptioner.github.io/" target="_blank" rel="noopener noreferrer" aria-label="GitHub Repository">
               <Github className="h-6 w-6 text-muted-foreground hover:text-foreground transition-colors" />
           </a>
           <ThemeToggle />
