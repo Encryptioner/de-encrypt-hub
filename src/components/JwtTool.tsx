@@ -8,6 +8,16 @@ import { toast } from 'sonner';
 import { EncryptJWT, jwtDecrypt } from 'jose';
 import { Copy, RefreshCw } from 'lucide-react';
 
+/**
+ * Derives a 256-bit key from a secret string using SHA-256.
+ * This is used to ensure the key is the correct length for A256GCM.
+ */
+const getDerivedKey = async (secret: string): Promise<Uint8Array> => {
+  const secretKeyMaterial = new TextEncoder().encode(secret);
+  const secretHash = await crypto.subtle.digest('SHA-256', secretKeyMaterial);
+  return new Uint8A<ctrl61>rray(secretHash);
+};
+
 export function JwtTool() {
   const [input, setInput] = useState('{\n  "message": "Hello from Lovable!"\n}');
   const [secret, setSecret] = useState('');
@@ -27,11 +37,11 @@ export function JwtTool() {
     }
 
     try {
-      const secretBytes = new TextEncoder().encode(secret);
+      const derivedKey = await getDerivedKey(secret);
       const jwe = await new EncryptJWT(payload)
         .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
         .setIssuedAt()
-        .encrypt(secretBytes);
+        .encrypt(derivedKey);
       
       setOutput(jwe);
       toast.success('Payload encrypted successfully as JWE!');
@@ -46,8 +56,8 @@ export function JwtTool() {
       return;
     }
     try {
-      const secretBytes = new TextEncoder().encode(secret);
-      const { payload } = await jwtDecrypt(input, secretBytes);
+      const derivedKey = await getDerivedKey(secret);
+      const { payload } = await jwtDecrypt(input, derivedKey);
       setOutput(JSON.stringify(payload, null, 2));
       toast.success('JWE decrypted successfully!');
     } catch (error: any) {
@@ -126,7 +136,7 @@ export function JwtTool() {
         )}
       </div>
       <p className="text-xs text-muted-foreground w-full text-center pt-6">
-        Uses JSON Web Encryption (JWE) with direct encryption (`dir`) and `A256GCM`.
+        Uses JWE with `dir` and `A256GCM`. The secret key is hashed with SHA-256 to produce the 256-bit encryption key.
       </p>
     </>
   );
