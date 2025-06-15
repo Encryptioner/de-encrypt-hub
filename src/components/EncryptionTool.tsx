@@ -5,6 +5,7 @@ import { CipherTool } from "./CipherTool";
 import { JwtTool } from "./JwtTool";
 import { HashTool } from "./HashTool";
 import { DigitalSignatureTool } from "./DigitalSignatureTool";
+import { RsaEncryptionTool } from "./RsaEncryptionTool";
 
 export function EncryptionTool() {
   return (
@@ -15,14 +16,18 @@ export function EncryptionTool() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="ciphers" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="ciphers">Ciphers</TabsTrigger>
+            <TabsTrigger value="rsa">RSA</TabsTrigger>
             <TabsTrigger value="jwt">JWT (JWE)</TabsTrigger>
             <TabsTrigger value="signatures">Digital Signatures</TabsTrigger>
             <TabsTrigger value="hashing">Hashing</TabsTrigger>
           </TabsList>
           <TabsContent value="ciphers">
             <CipherTool />
+          </TabsContent>
+          <TabsContent value="rsa">
+            <RsaEncryptionTool />
           </TabsContent>
           <TabsContent value="jwt">
             <JwtTool />
