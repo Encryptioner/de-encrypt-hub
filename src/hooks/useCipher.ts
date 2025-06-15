@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { encrypt, decrypt } from '@/lib/crypto';
@@ -22,21 +21,9 @@ export function useCipher({ mode }: UseCipherProps) {
     const f = e.target.files?.[0];
     if (f) {
       setFile(f);
+      setInput(''); // Clear text input to avoid showing garbled content for binary files
       setOutput('');
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const fileContent = event.target?.result;
-        if (typeof fileContent === 'string') {
-          setInput(fileContent);
-          toast.success(`File "${f.name}" loaded.`);
-        } else {
-          toast.error("Failed to read file as text.");
-        }
-      };
-      reader.onerror = () => {
-        toast.error("Error reading file.");
-      };
-      reader.readAsText(f);
+      toast.success(`File "${f.name}" loaded. Ready for encryption.`);
     }
   };
   
