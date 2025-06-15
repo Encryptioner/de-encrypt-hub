@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { toast } from 'sonner';
 import { type VisualizationStep } from '@/hooks/useCipher';
@@ -100,7 +99,6 @@ export function useEd25519() {
     setIsProcessing(true);
     setProcessingAction('sign');
     setSignature('');
-    setVisualizationSteps([]);
 
     const steps = [
         { title: '1. Load Data & Private Key', explanation: 'The signing process begins with your data and your secret Ed25519 private key. This key is the foundation of the signature and must be kept absolutely secret.' },
@@ -110,6 +108,7 @@ export function useEd25519() {
     ];
     
     const initialSteps: VisualizationStep[] = steps.map(s => ({ ...s, data: '', status: 'pending' }));
+    setVisualizationSteps(initialSteps);
     
     try {
         for (let i = 0; i < initialSteps.length; i++) {
@@ -148,7 +147,6 @@ export function useEd25519() {
   const runSlowVerify = async (dataToVerify: ArrayBuffer, signatureToVerify: string) => {
     setIsProcessing(true);
     setProcessingAction('verify');
-    setVisualizationSteps([]);
 
     const steps = [
         { title: '1. Load Data, Public Key & Signature', explanation: 'Verification uses the public data, the signature, and the public key. The public key corresponds to the private key used for signing.' },
@@ -158,6 +156,7 @@ export function useEd25519() {
     ];
     
     const initialSteps: VisualizationStep[] = steps.map(s => ({ ...s, data: '', status: 'pending' }));
+    setVisualizationSteps(initialSteps);
     
     try {
         for (let i = 0; i < initialSteps.length; i++) {
