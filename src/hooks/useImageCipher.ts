@@ -88,7 +88,7 @@ export function useImageCipher({ mode }: UseImageCipherProps) {
       await new Promise(res => setTimeout(res, 100));
       setVisualizationSteps(prev => prev.map((s, i) => i === 1 ? { ...s, status: 'processing', data: originalImage } : s));
 
-      const onProgressCallback = (p: number, intermediateData: ImageData) => {
+      const onProgressCallback = async (p: number, intermediateData: ImageData) => {
         setProgress(p);
         // Update visualization periodically, not on every single pixel, to avoid perf issues
         if (p > 0 && p < 100 && p % 5 === 0) {
