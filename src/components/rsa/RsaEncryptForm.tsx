@@ -1,9 +1,10 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
-import { Copy, FileText, File as FileIcon, Download, Lock } from 'lucide-react';
+import { Copy, FileText, File as FileIcon, Download, Lock, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { arrayBufferToBase64, base64ToArrayBuffer } from '@/lib/utils';
@@ -19,6 +20,29 @@ export function RsaEncryptForm({ publicKey }: RsaEncryptFormProps) {
   const [cryptFile, setCryptFile] = useState<File | null>(null);
   const [cryptFileBuffer, setCryptFileBuffer] = useState<ArrayBuffer | null>(null);
   const [encryptedData, setEncryptedData] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [animatedOutput, setAnimatedOutput] = useState('');
+
+  useEffect(() => {
+    if (isProcessing) {
+      const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+      const interval = setInterval(() => {
+        let result = '';
+        const length = cryptInputType === 'text'
+          ? cryptTextInput.length * 1.5
+          : cryptFileBuffer ? cryptFileBuffer.byteLength * 1.33 : 200;
+        
+        const outputLength = Math.min(Math.floor(length), 350);
+
+        for (let i = 0; i < outputLength; i++) {
+          result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+        }
+        setAnimatedOutput(result);
+      }, 50);
+
+      return () => clearInterval(interval);
+    }
+  }, [isProcessing, cryptInputType, cryptTextInput, cryptFileBuffer]);
 
   const handleCryptFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -57,7 +81,11 @@ export function RsaEncryptForm({ publicKey }: RsaEncryptFormProps) {
       dataToEncrypt = cryptFileBuffer;
     }
 
+    setIsProcessing(true);
+    setEncryptedData('');
+
     try {
+      await new Promise(res => setTimeout(res, 500));
       const publicKeyJwk = JSON.parse(publicKey);
       const key = await window.crypto.subtle.importKey('jwk', publicKeyJwk, { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['encrypt']);
       const encrypted = await window.crypto.subtle.encrypt({ name: 'RSA-OAEP' }, key, dataToEncrypt);
@@ -65,7 +93,10 @@ export function RsaEncryptForm({ publicKey }: RsaEncryptFormProps) {
       toast.success('Encryption successful!');
     } catch (error) {
       toast.error('Encryption failed. Ensure the public key is correct.');
+      setEncryptedData('');
       console.error(error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -110,6 +141,7 @@ export function RsaEncryptForm({ publicKey }: RsaEncryptFormProps) {
               value={cryptInputType}
               onValueChange={(value) => setCryptInputType(value as 'text' | 'file')}
               className="flex items-center gap-4 py-2"
+              disabled={isProcessing}
           >
               <div className="flex items-center space-x-2">
                   <RadioGroupItem value="text" id="rsa-encrypt-text-type" />
@@ -122,29 +154,35 @@ export function RsaEncryptForm({ publicKey }: RsaEncryptFormProps) {
           </RadioGroup>
 
           {cryptInputType === 'text' ? (
-              <Textarea placeholder="Your secret message..." value={cryptTextInput} onChange={(e) => setCryptTextInput(e.target.value)} className="min-h-[120px] resize-y" />
+              <Textarea placeholder="Your secret message..." value={cryptTextInput} onChange={(e) => setCryptTextInput(e.target.value)} className="min-h-[120px] resize-y" disabled={isProcessing} />
           ) : (
               <div className="grid gap-2">
-                  <Input type="file" onChange={handleCryptFileChange} />
+                  <Input type="file" onChange={handleCryptFileChange} disabled={isProcessing} />
                   {cryptFile && <p className="text-sm text-muted-foreground">Selected: {cryptFile.name} ({(cryptFile.size / 1024).toFixed(2)} KB)</p>}
               </div>
           )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
-          <Button onClick={handleEncrypt} className="flex-1"><Lock className="mr-2 h-4 w-4"/>Encrypt with Public Key</Button>
+          <Button onClick={handleEncrypt} className="flex-1" disabled={isProcessing}>
+            {isProcessing ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Encrypting...</>
+            ) : (
+              <><Lock className="mr-2 h-4 w-4"/>Encrypt with Public Key</>
+            )}
+          </Button>
         </div>
 
-        {encryptedData && (
+        {(encryptedData || isProcessing) && (
           <div className="grid gap-2 pt-4 border-t">
               <div className="flex justify-between items-center">
                   <Label htmlFor="rsa-encrypted">Encrypted Data (Base64)</Label>
                   <div>
-                      <Button variant="ghost" size="icon" onClick={() => handleDownload(encryptedData, 'encrypted.bin')} title="Download Encrypted Data"><Download className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleCopy(encryptedData)} title="Copy to Clipboard"><Copy className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDownload(encryptedData, 'encrypted.bin')} title="Download Encrypted Data" disabled={isProcessing}><Download className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleCopy(encryptedData)} title="Copy to Clipboard" disabled={isProcessing}><Copy className="w-4 h-4" /></Button>
                   </div>
               </div>
-              <Textarea id="rsa-encrypted" readOnly value={encryptedData} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
+              <Textarea id="rsa-encrypted" readOnly value={isProcessing ? animatedOutput : encryptedData} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
           </div>
         )}
       </CardContent>
