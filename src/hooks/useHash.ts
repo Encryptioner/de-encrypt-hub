@@ -58,7 +58,8 @@ export function useHash() {
         if (i === 0) {
             stepData = `Input: "${input.substring(0, 48)}${input.length > 48 ? '...' : ''}"`;
         } else if (i === 1) {
-            stepData = `Simulating processing of data blocks...`;
+            const blockSize = (algorithm === 'SHA-512') ? '1024-bit' : '512-bit';
+            stepData = `Simulating processing of data in ${blockSize} chunks...`;
         } else {
             const finalResult = await hash(input, algorithm);
             stepData = finalResult;

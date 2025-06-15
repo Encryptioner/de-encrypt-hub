@@ -2,6 +2,13 @@
 {
   "title": "De-encrypt Hub",
   "subtitle": "A versatile, browser-based toolkit for all your encryption, decryption, signing, and hashing needs.",
+  "hashing": {
+    "SHA-256": "Part of the SHA-2 family, it produces a 256-bit (32-byte) hash. It's a secure standard for data integrity, used in blockchain technology like Bitcoin and for digital signatures.",
+    "SHA-512": "Also in the SHA-2 family, but produces a longer 512-bit (64-byte) hash. It's more secure than SHA-256 but slightly slower, often used in systems requiring higher security.",
+    "SHA-1": "Warning: SHA-1 is considered insecure. It produces a 160-bit hash and is vulnerable to collision attacks, where two different inputs can produce the same hash. It should not be used for new security applications.",
+    "MD5": "Warning: MD5 is broken and cryptographically insecure. It produces a 128-bit hash and suffers from extensive collision vulnerabilities. It should only be used for non-security purposes like checksums to detect unintentional data corruption.",
+    "generic": "Hashing is a one-way function that creates a unique, fixed-size fingerprint of data. It's used to verify data integrity, not for encryption."
+  },
   "algorithms": [
     {
       "name": "AES",

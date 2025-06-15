@@ -10,6 +10,7 @@ import { Copy, Loader2 } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import { useHash } from '@/hooks/useHash';
 import { CipherVisualization } from './CipherVisualization';
+import content from '@/config/content.json';
 
 const hashAlgorithms: { name: string; value: HashAlgorithm }[] = [
     { name: 'SHA-256', value: 'SHA-256' },
@@ -30,6 +31,8 @@ export function HashTool() {
     handleHash,
     handleCopy,
   } = useHash();
+
+  const principle = (content.hashing as Record<string, string>)[algorithm] || content.hashing.generic;
 
   return (
     <>
@@ -80,7 +83,7 @@ export function HashTool() {
         {showSteps && visualizationSteps.length > 0 && (
             <CipherVisualization
               steps={visualizationSteps}
-              principle="Hashing is a one-way function that creates a unique, fixed-size fingerprint of data. It's used to verify data integrity, not for encryption."
+              principle={principle}
             />
         )}
 

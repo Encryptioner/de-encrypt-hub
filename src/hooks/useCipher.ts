@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { encrypt, decrypt } from '@/lib/crypto';
@@ -76,33 +77,50 @@ export function useCipher({ mode }: UseCipherProps) {
       dataForVisualization = data;
     } else {
       dataForEncryption = arrayBufferToBase64(data);
-      dataForVisualization = dataForEncryption.substring(0, 44) + '...';
+      dataForVisualization = `File: ${file?.name || 'binary data'}`;
     }
 
     const textToHex = (text: string) => text.split('').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
     const hexScramble = (hex: string) => hex.split('').sort(() => 0.5 - Math.random()).join('');
-    let currentHex = textToHex(dataForVisualization.substring(0, 32));
 
     const initialSteps: VisualizationStep[] = stepsConfig.map(s => ({ ...s, data: '', status: 'pending' }));
     
-    setVisualizationSteps(initialSteps); // FIX: Initialize the steps array.
+    setVisualizationSteps(initialSteps);
 
     for (let i = 0; i < initialSteps.length; i++) {
         await new Promise(res => setTimeout(res, 100));
         setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'processing', data: '...' } : s)));
         await new Promise(res => setTimeout(res, 800));
 
-        currentHex = hexScramble(currentHex);
         let stepData: string;
 
         if (i === 0) {
-            stepData = `Input: "${dataForVisualization.substring(0, 48)}..."`;
-        } else if (i < initialSteps.length - 1) {
-            stepData = `Simulating transformation step ${i + 1}... (${currentHex.substring(0, 32)})`;
+            stepData = `Input: "${dataForVisualization.substring(0, 30)}${dataForVisualization.length > 30 ? '...' : ''}"\nKey: "${key.substring(0, 16)}..."`;
+        } else if (isStreamCipher) {
+            // Stream Cipher Steps
+            if (i === 1) {
+                stepData = `Initializing keystream generator with the secret key.`;
+            } else if (i === 2) {
+                const fakeKeystream = hexScramble(textToHex(key + dataForVisualization).substring(0, 32));
+                stepData = `Generated Keystream: ${fakeKeystream}...`;
+            } else if (i === 3) {
+                stepData = `XORing the input data with the generated keystream.`;
+            } else { // Final step
+                const finalResult = encrypt(dataForEncryption, key, algorithm);
+                stepData = finalResult;
+                setOutput(finalResult);
+            }
         } else {
-            const finalResult = encrypt(dataForEncryption, key, algorithm);
-            stepData = finalResult;
-            setOutput(finalResult);
+            // Block Cipher Steps
+            if (i === 1) {
+                stepData = `Secret key is expanded into multiple unique 'round keys'.`;
+            } else if (i === 2) {
+                 stepData = `Simulating a transformation round on a data block using a round key.`;
+            } else { // Final step
+                const finalResult = encrypt(dataForEncryption, key, algorithm);
+                stepData = finalResult;
+                setOutput(finalResult);
+            }
         }
         
         setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
@@ -143,7 +161,7 @@ export function useCipher({ mode }: UseCipherProps) {
     
     const initialSteps: VisualizationStep[] = stepsConfig.map(s => ({ ...s, data: '', status: 'pending' }));
     
-    setVisualizationSteps(initialSteps); // FIX: Initialize the steps array here as well.
+    setVisualizationSteps(initialSteps);
     
     for (let i = 0; i < initialSteps.length; i++) {
         await new Promise(res => setTimeout(res, 100));
@@ -152,8 +170,19 @@ export function useCipher({ mode }: UseCipherProps) {
 
         let stepData: string;
 
-        if (i < initialSteps.length - 1) {
-            stepData = `Simulating inverse operation... ${Math.random().toString(36).substring(2, 10)}`;
+        if (i === 0) {
+            stepData = `Ciphertext: "${data.substring(0, 30)}..."\nKey: "${key.substring(0, 16)}..."`;
+        } else if (i < initialSteps.length - 1) {
+            if (isStreamCipher) {
+                if (i === 1) stepData = `Initializing keystream generator with the secret key.`;
+                else if (i === 2) stepData = `Re-generating the exact same keystream as used in encryption.`;
+                else if (i === 3) stepData = `XORing the ciphertext with the keystream to reverse encryption.`;
+                else stepData = `Simulating inverse operation...`;
+            } else { // Block Cipher
+                if (i === 1) stepData = `Secret key is expanded into 'round keys' for decryption.`;
+                else if (i === 2) stepData = `Simulating an inverse transformation round on a data block.`;
+                else stepData = `Simulating inverse operation...`;
+            }
         } else {
             try {
                 const finalResult = decrypt(data, key, algorithm);
