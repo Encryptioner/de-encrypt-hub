@@ -25,6 +25,9 @@ export function RsaEncryptionTool({ mode }: RsaEncryptionToolProps) {
   const [decryptedData, setDecryptedData] = useState('');
   const [decryptedFileUrl, setDecryptedFileUrl] = useState<string | null>(null);
 
+  const [decryptInputType, setDecryptInputType] = useState<'text' | 'file'>('text');
+  const [decryptFile, setDecryptFile] = useState<globalThis.File | null>(null);
+
   const handleGenerateKeys = async () => {
     try {
       const keyPair = await window.crypto.subtle.generateKey(
@@ -74,6 +77,29 @@ export function RsaEncryptionTool({ mode }: RsaEncryptionToolProps) {
         toast.error("Error reading file.");
       };
       reader.readAsArrayBuffer(selectedFile);
+    }
+  };
+
+  const handleDecryptFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+      setDecryptFile(selectedFile);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        if (typeof content === 'string') {
+          setEncryptedData(content);
+          setDecryptedData('');
+          setDecryptedFileUrl(null);
+          toast.success(`File for decryption "${selectedFile.name}" loaded.`);
+        } else {
+          toast.error("Failed to read file as text.");
+        }
+      };
+      reader.onerror = () => {
+        toast.error("Error reading file.");
+      };
+      reader.readAsText(selectedFile);
     }
   };
 
@@ -223,7 +249,21 @@ export function RsaEncryptionTool({ mode }: RsaEncryptionToolProps) {
                             </TabsContent>
                         </Tabs>
                     ) : (
-                        <Textarea id="rsa-encrypted-input" placeholder="Paste your Base64 encrypted data here..." value={encryptedData} onChange={(e) => setEncryptedData(e.target.value)} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
+                        <Tabs defaultValue="text" className="w-full" onValueChange={(value) => setDecryptInputType(value as 'text' | 'file')}>
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="text"><FileText className="mr-2 h-4 w-4" />Text Input</TabsTrigger>
+                                <TabsTrigger value="file"><FileIcon className="mr-2 h-4 w-4" />File Input</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="text" className="pt-2">
+                                <Textarea id="rsa-encrypted-input" placeholder="Paste your Base64 encrypted data here..." value={encryptedData} onChange={(e) => setEncryptedData(e.target.value)} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
+                            </TabsContent>
+                            <TabsContent value="file" className="pt-2">
+                                <div className="grid gap-2">
+                                    <Input type="file" onChange={handleDecryptFileChange} />
+                                    {decryptFile && <p className="text-sm text-muted-foreground">Selected: {decryptFile.name}</p>}
+                                </div>
+                            </TabsContent>
+                        </Tabs>
                     )}
                 </div>
 

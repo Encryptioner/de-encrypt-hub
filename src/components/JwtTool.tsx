@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 import { EncryptJWT, jwtDecrypt } from 'jose';
-import { Copy, RefreshCw, Download } from 'lucide-react';
+import { Copy, RefreshCw, Download, FileText, File as FileIcon } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 /**
  * Derives a 256-bit key from a secret string using SHA-256.
@@ -22,9 +23,11 @@ interface JwtToolProps {
 }
 
 export function JwtTool({ mode }: JwtToolProps) {
-  const [input, setInput] = useState('{\n  "message": "Hello from Lovable!"\n}');
+  const [input, setInput] = useState(mode === 'encrypt' ? '{\n  "message": "Hello from Lovable!"\n}' : '');
   const [secret, setSecret] = useState('');
   const [output, setOutput] = useState('');
+  const [decryptInputType, setDecryptInputType] = useState<'text' | 'file'>('text');
+  const [decryptFile, setDecryptFile] = useState<globalThis.File | null>(null);
 
   const handleEncrypt = async () => {
     if (!input || !secret) {
@@ -47,24 +50,24 @@ export function JwtTool({ mode }: JwtToolProps) {
         .encrypt(derivedKey);
       
       setOutput(jwe);
-      toast.success('Payload encrypted successfully as JWE!');
+      toast.success('Payload encrypted successfully as JWT!');
     } catch (error: any) {
-      toast.error(error.message || 'JWE encryption failed.');
+      toast.error(error.message || 'JWT encryption failed.');
     }
   };
 
   const handleDecrypt = async () => {
     if (!input || !secret) {
-      toast.error('JWE and secret key cannot be empty.');
+      toast.error('JWT and secret key cannot be empty.');
       return;
     }
     try {
       const derivedKey = await getDerivedKey(secret);
       const { payload } = await jwtDecrypt(input, derivedKey);
       setOutput(JSON.stringify(payload, null, 2));
-      toast.success('JWE decrypted successfully!');
+      toast.success('JWT decrypted successfully!');
     } catch (error: any) {
-      toast.error(error.message || 'JWE decryption failed.');
+      toast.error(error.message || 'JWT decryption failed.');
     }
   };
   
@@ -84,7 +87,7 @@ export function JwtTool({ mode }: JwtToolProps) {
     }
     
     const blob = new Blob([output], { type: 'text/plain;charset=utf-8' });
-    const filename = mode === 'encrypt' ? 'encrypted.jwe' : 'decrypted.json';
+    const filename = mode === 'encrypt' ? 'encrypted.jwt' : 'decrypted.json';
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -106,18 +109,63 @@ export function JwtTool({ mode }: JwtToolProps) {
     setOutput('');
   }
 
+  const handleDecryptFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+        setDecryptFile(selectedFile);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const content = e.target?.result as string;
+            if (typeof content === 'string') {
+                setInput(content);
+                toast.success(`File for decryption "${selectedFile.name}" loaded.`);
+            } else {
+                toast.error("Failed to read file as text.");
+            }
+        };
+        reader.onerror = () => {
+            toast.error("Error reading file.");
+        };
+        reader.readAsText(selectedFile);
+    }
+  };
+
   return (
     <>
       <div className="space-y-6 pt-4">
         <div className="grid gap-2">
-          <Label htmlFor="jwt-input">{mode === 'encrypt' ? 'Payload (JSON)' : 'JWE Token'}</Label>
-          <Textarea
-            id="jwt-input"
-            placeholder='{ "data": "your_json_payload" } or a JWE token...'
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className="min-h-[120px] resize-y"
-          />
+          <Label htmlFor="jwt-input">{mode === 'encrypt' ? 'Payload (JSON)' : 'JWT Token'}</Label>
+          {mode === 'encrypt' ? (
+            <Textarea
+              id="jwt-input"
+              placeholder='{ "data": "your_json_payload" }'
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className="min-h-[120px] resize-y"
+            />
+          ) : (
+            <Tabs defaultValue="text" className="w-full" onValueChange={(value) => setDecryptInputType(value as 'text' | 'file')}>
+              <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="text"><FileText className="mr-2 h-4 w-4" />Text Input</TabsTrigger>
+                  <TabsTrigger value="file"><FileIcon className="mr-2 h-4 w-4" />File Input</TabsTrigger>
+              </TabsList>
+              <TabsContent value="text" className="pt-2">
+                <Textarea
+                  id="jwt-input"
+                  placeholder='Paste your JWT token here...'
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  className="min-h-[120px] resize-y font-mono text-sm"
+                />
+              </TabsContent>
+              <TabsContent value="file" className="pt-2">
+                  <div className="grid gap-2">
+                      <Input type="file" onChange={handleDecryptFileChange} />
+                      {decryptFile && <p className="text-sm text-muted-foreground">Selected: {decryptFile.name}</p>}
+                  </div>
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="jwt-key">Secret Key</Label>
@@ -166,7 +214,7 @@ export function JwtTool({ mode }: JwtToolProps) {
         )}
       </div>
       <p className="text-xs text-muted-foreground w-full text-center pt-6">
-        Uses JWE with `dir` and `A256GCM`. The secret key is hashed with SHA-256 to produce the 256-bit encryption key.
+        Uses JWT (JWE) with `dir` and `A256GCM` for encryption. The secret key is hashed with SHA-256 to produce the encryption key.
       </p>
     </>
   );

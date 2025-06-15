@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CipherTool } from "./CipherTool";
@@ -28,7 +27,7 @@ export function CryptoKit() {
               <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="ciphers">Ciphers</TabsTrigger>
                 <TabsTrigger value="rsa">RSA</TabsTrigger>
-                <TabsTrigger value="jwt">JWT (JWE)</TabsTrigger>
+                <TabsTrigger value="jwt">JWT</TabsTrigger>
                 <TabsTrigger value="signatures">Digital Signatures</TabsTrigger>
                 <TabsTrigger value="hashing">Hashing</TabsTrigger>
               </TabsList>
@@ -46,7 +45,7 @@ export function CryptoKit() {
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="ciphers">Ciphers</TabsTrigger>
                 <TabsTrigger value="rsa">RSA</TabsTrigger>
-                <TabsTrigger value="jwt">JWT (JWE)</TabsTrigger>
+                <TabsTrigger value="jwt">JWT</TabsTrigger>
               </TabsList>
               <TabsContent value="ciphers"><CipherTool mode="decrypt" /></TabsContent>
               <TabsContent value="rsa"><RsaEncryptionTool mode="decrypt" /></TabsContent>
