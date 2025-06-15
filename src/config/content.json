@@ -1,0 +1,12 @@
+
+{
+  "title": "Encryptify",
+  "subtitle": "Secure your messages with modern encryption algorithms. Fast, simple, and secure.",
+  "algorithms": [
+    { "name": "AES", "value": "AES", "description": "Advanced Encryption Standard - A widely used symmetric encryption algorithm." },
+    { "name": "DES", "value": "DES", "description": "Data Encryption Standard - An older symmetric-key algorithm." },
+    { "name": "TripleDES", "value": "TripleDES", "description": "Triple Data Encryption Algorithm - Applies DES three times." },
+    { "name": "Rabbit", "value": "Rabbit", "description": "A high-performance stream cipher." },
+    { "name": "RC4", "value": "RC4", "description": "Rivest Cipher 4 - A widely used stream cipher." }
+  ]
+}
