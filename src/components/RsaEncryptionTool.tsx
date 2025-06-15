@@ -7,7 +7,7 @@ import { Copy, RefreshCw, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { RsaKeyManager } from './rsa/RsaKeyManager';
-import { CipherVisualization } from '../CipherVisualization';
+import { CipherVisualization } from '@/components/CipherVisualization';
 import { useRsa } from '@/hooks/useRsa';
 import content from '@/config/content.json';
 
