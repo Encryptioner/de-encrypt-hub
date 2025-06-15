@@ -65,6 +65,8 @@ export function JwtTool({ mode }: JwtToolProps) {
     setIsProcessing(true);
     setOutput('');
     try {
+      // Artificial delay for animation
+      await new Promise(res => setTimeout(res, 500));
       const derivedKey = await getDerivedKey(secret);
       const jwe = await new EncryptJWT(payload)
         .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
@@ -89,6 +91,8 @@ export function JwtTool({ mode }: JwtToolProps) {
     setIsProcessing(true);
     setOutput('');
     try {
+      // Artificial delay for animation
+      await new Promise(res => setTimeout(res, 500));
       const derivedKey = await getDerivedKey(secret);
       const { payload } = await jwtDecrypt(input, derivedKey);
       setOutput(JSON.stringify(payload, null, 2));
