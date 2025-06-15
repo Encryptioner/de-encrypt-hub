@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,6 +32,9 @@ export function RsaTool() {
     handleCopy,
     handleDownloadSignature,
   } = useRsaSign();
+
+  const isSignDisabled = isProcessing || !privateKey || (signInputType === 'text' && !signTextInput) || (signInputType === 'file' && !signFile);
+  const isVerifyDisabled = isProcessing || !publicKey || !signature || (signInputType === 'text' && !signTextInput) || (signInputType === 'file' && !signFile);
 
   return (
     <>
@@ -112,11 +114,11 @@ export function RsaTool() {
                 </div>
                 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button onClick={handleSign} className="flex-1" disabled={isProcessing || !privateKey}>
+                  <Button onClick={handleSign} className="flex-1" disabled={isSignDisabled}>
                     {isProcessing && processingAction === 'sign' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isProcessing && processingAction === 'sign' ? 'Signing...' : 'Sign with Private Key'}
                   </Button>
-                  <Button onClick={handleVerify} variant="secondary" className="flex-1" disabled={isProcessing || !publicKey || !signature}>
+                  <Button onClick={handleVerify} variant="secondary" className="flex-1" disabled={isVerifyDisabled}>
                     {isProcessing && processingAction === 'verify' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isProcessing && processingAction === 'verify' ? 'Verifying...' : 'Verify with Public Key'}
                   </Button>

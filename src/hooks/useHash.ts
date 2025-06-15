@@ -6,7 +6,7 @@ import { type VisualizationStep } from '@/hooks/useCipher';
 import { arrayBufferToBase64 } from '@/lib/utils';
 
 export function useHash() {
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState('This is a test message.');
   const [algorithm, setAlgorithm] = useState<HashAlgorithm>('SHA-256');
   const [output, setOutput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);

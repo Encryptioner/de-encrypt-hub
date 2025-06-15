@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,7 +74,7 @@ export function HashTool() {
             <Label htmlFor="slow-mode-switch">Show Step-by-Step Visualization</Label>
         </div>
 
-        <Button onClick={handleHash} className="w-full" disabled={isProcessing}>
+        <Button onClick={handleHash} className="w-full" disabled={isProcessing || !input}>
             {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isProcessing ? 'Generating...' : 'Generate Hash'}
         </Button>
