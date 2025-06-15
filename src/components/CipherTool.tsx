@@ -1,5 +1,4 @@
 
-
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,7 +80,7 @@ export function CipherTool({ mode }: CipherToolProps) {
             {inputType === 'text' ? (
                 <Textarea
                     id="input"
-                    placeholder="Your secret message or ciphertext..."
+                    placeholder={mode === 'encrypt' ? "Your secret message..." : "Your ciphertext to decrypt..."}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     className="min-h-[120px] resize-y"
@@ -138,12 +137,12 @@ export function CipherTool({ mode }: CipherToolProps) {
 
         <div className="flex flex-col sm:flex-row gap-4">
             {mode === 'encrypt' ? (
-                <Button onClick={handleEncrypt} className="flex-1" disabled={isProcessing}>
+                <Button onClick={handleEncrypt} className="flex-1" disabled={isProcessing || !input || !key}>
                     {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isProcessing ? 'Encrypting...' : 'Encrypt'}
                 </Button>
             ) : (
-                <Button onClick={handleDecrypt} className="flex-1" variant="secondary" disabled={isProcessing}>
+                <Button onClick={handleDecrypt} className="flex-1" disabled={isProcessing || !input || !key}>
                     {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isProcessing ? 'Decrypting...' : 'Decrypt'}
                 </Button>

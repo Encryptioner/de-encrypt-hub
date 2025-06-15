@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { encrypt, decrypt, type Algorithm } from '@/lib/crypto';
@@ -20,7 +19,7 @@ interface UseCipherProps {
 
 export function useCipher({ mode }: UseCipherProps) {
   const [inputType, setInputType] = useState<'text' | 'file'>('text');
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(mode === 'encrypt' ? 'This is a test message.' : 'Enter your ciphertext here...');
   const [file, setFile] = useState<File | null>(null);
   const [key, setKey] = useState('');
   const [algorithm, setAlgorithm] = useState<Algorithm>('AES');
