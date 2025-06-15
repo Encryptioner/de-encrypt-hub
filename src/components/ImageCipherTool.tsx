@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { Upload, KeyRound, Lock, Unlock, Download, RefreshCw, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useImageCipher } from '@/hooks/useImageCipher';
 import { ImageAlgorithm } from '@/lib/imageEncryption';
@@ -21,6 +22,7 @@ export function ImageCipherTool({ mode }: ImageCipherToolProps) {
     key, setKey,
     algorithm, setAlgorithm,
     isProcessing,
+    progress,
     handleImageUpload,
     handleProcess,
     handleDownload,
@@ -90,18 +92,27 @@ export function ImageCipherTool({ mode }: ImageCipherToolProps) {
             <CardDescription>The {mode}ed image will appear here.</CardDescription>
           </CardHeader>
           <CardContent className="flex-grow flex flex-col items-center justify-center bg-muted/20 rounded-b-lg p-4">
-            {isProcessing && (
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                    <p className="text-muted-foreground">Processing...</p>
+            {isProcessing ? (
+                <div className="flex flex-col items-center justify-center gap-4 w-full h-full">
+                    <div className="relative w-full aspect-video rounded-md overflow-hidden border bg-background">
+                        <img 
+                            src={processedImage || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'} 
+                            alt="Processing..." 
+                            className="w-full h-full object-contain" 
+                        />
+                    </div>
+                    <div className="w-full pt-2">
+                        <Progress value={progress} className="w-full h-2" />
+                        <p className="text-sm text-muted-foreground text-center pt-2">
+                            {mode === 'encrypt' ? 'Encrypting' : 'Decrypting'}... {Math.round(progress)}%
+                        </p>
+                    </div>
                 </div>
-            )}
-            {!isProcessing && processedImage && (
+            ) : processedImage ? (
                 <div className="relative w-full aspect-video rounded-md overflow-hidden border">
                     <img src={processedImage} alt="Processed" className="w-full h-full object-contain" />
                 </div>
-            )}
-            {!isProcessing && !processedImage && (
+            ) : (
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <ImageIcon className="w-12 h-12" />
                     <p>Result will be shown here</p>
@@ -116,7 +127,7 @@ export function ImageCipherTool({ mode }: ImageCipherToolProps) {
         <div className="space-y-4 pt-4 border-t">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="image-key" className="flex items-center"><KeyRound />Secret Key</Label>
+              <Label htmlFor="image-key" className="flex items-center"><KeyRound className="mr-2"/>Secret Key</Label>
               <Input
                 id="image-key"
                 type="password"
@@ -141,18 +152,18 @@ export function ImageCipherTool({ mode }: ImageCipherToolProps) {
               </Select>
             </div>
           </div>
-          <div className="flex flex-wrap gap-4">
-            <Button onClick={handleProcess} disabled={isProcessing || !key} className="flex-1">
-              {isProcessing ? <Loader2 className="animate-spin" /> : (mode === 'encrypt' ? <Lock /> : <Unlock />)}
-              {isProcessing ? 'Processing...' : (mode === 'encrypt' ? 'Encrypt Image' : 'Decrypt Image')}
+          <div className="flex flex-wrap gap-4 pt-2">
+            <Button onClick={handleProcess} disabled={isProcessing || !key} className="flex-1 min-w-[180px]">
+              {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (mode === 'encrypt' ? <Lock className="mr-2 h-4 w-4"/> : <Unlock className="mr-2 h-4 w-4"/>)}
+              {isProcessing ? `${mode === 'encrypt' ? 'Encrypting...' : 'Decrypting...'}` : (mode === 'encrypt' ? 'Encrypt Image' : 'Decrypt Image')}
             </Button>
-            {processedImage && (
-              <Button onClick={handleDownload} variant="outline" className="flex-1">
-                <Download/>Download Result
+            {processedImage && !isProcessing && (
+              <Button onClick={handleDownload} variant="outline" className="flex-1 min-w-[180px]">
+                <Download className="mr-2 h-4 w-4"/>Download Result
               </Button>
             )}
             <Button onClick={handleReset} variant="ghost" className="flex-1 sm:flex-none">
-              <RefreshCw /> Reset
+              <RefreshCw className="mr-2 h-4 w-4" /> Reset
             </Button>
           </div>
           <p className="text-xs text-muted-foreground w-full text-center pt-2">{(content.imageAlgorithms || []).find(a => a.value === algorithm)?.description}</p>

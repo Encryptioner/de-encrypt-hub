@@ -1,4 +1,3 @@
-
 export type ImageAlgorithm = 'pixel-scramble' | 'color-scramble' | 'xor-cipher';
 
 // Simple seeded pseudo-random number generator (mulberry32)
@@ -31,71 +30,107 @@ function shuffleIndices(count: number, rand: () => number): number[] {
   return array;
 }
 
+// Helper to allow UI to update during long operations
+const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 0));
+
 // The main processing function
-export const processImage = (
+export const processImage = async (
     imageData: ImageData, 
     key: string, 
     algorithm: ImageAlgorithm, 
-    mode: 'encrypt' | 'decrypt'
-): ImageData => {
+    mode: 'encrypt' | 'decrypt',
+    onProgress?: (progress: number, data: ImageData) => Promise<void>
+): Promise<ImageData> => {
   const { data, width, height } = imageData;
-  const newImageData = new Uint8ClampedArray(data);
+  const newImageDataArray = new Uint8ClampedArray(data);
   const seed = createSeed(key);
   const rand = seededRandom(seed);
   const pixelCount = width * height;
 
+  // Function to report progress
+  const reportProgress = async (processedPixels: number, currentData: Uint8ClampedArray) => {
+    if (onProgress) {
+        const progress = (processedPixels / pixelCount) * 100;
+        const newImageData = new ImageData(new Uint8ClampedArray(currentData), width, height);
+        await onProgress(progress, newImageData);
+    }
+  };
+
   switch (algorithm) {
     case 'pixel-scramble': {
       const shuffledIndices = shuffleIndices(pixelCount, rand);
-      
+      const tempPixelData = new Uint8ClampedArray(pixelCount * 4);
+      // For decryption, we need the original image data to reconstruct from shuffled indices
+      const sourceData = mode === 'decrypt' ? new Uint8ClampedArray(data) : data;
+      const reportFrequency = Math.max(1, Math.floor(pixelCount / 100)); // ~100 updates
+
       for (let i = 0; i < pixelCount; i++) {
         const fromIndex = mode === 'encrypt' ? i : shuffledIndices[i];
         const toIndex = mode === 'encrypt' ? shuffledIndices[i] : i;
         
-        const fromPixel = fromIndex * 4;
-        const toPixel = toIndex * 4;
+        const fromPixelOffset = fromIndex * 4;
+        const toPixelOffset = toIndex * 4;
 
-        newImageData[toPixel] = data[fromPixel];
-        newImageData[toPixel + 1] = data[fromPixel + 1];
-        newImageData[toPixel + 2] = data[fromPixel + 2];
-        newImageData[toPixel + 3] = data[fromPixel + 3];
+        tempPixelData[toPixelOffset] = sourceData[fromPixelOffset];
+        tempPixelData[toPixelOffset + 1] = sourceData[fromPixelOffset + 1];
+        tempPixelData[toPixelOffset + 2] = sourceData[fromPixelOffset + 2];
+        tempPixelData[toPixelOffset + 3] = sourceData[fromPixelOffset + 3];
+
+        if (i % reportFrequency === 0) {
+            await reportProgress(i, tempPixelData);
+            await yieldToMain(); // Give browser time to render
+        }
       }
+      Object.assign(newImageDataArray, tempPixelData);
       break;
     }
     case 'color-scramble': {
-      const permutation = shuffleIndices(3, rand);
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const original = [r, g, b];
-        
-        if (mode === 'encrypt') {
-          newImageData[i] = original[permutation[0]];
-          newImageData[i + 1] = original[permutation[1]];
-          newImageData[i + 2] = original[permutation[2]];
-        } else {
-          const decrypted = [0, 0, 0];
-          decrypted[permutation[0]] = original[0];
-          decrypted[permutation[1]] = original[1];
-          decrypted[permutation[2]] = original[2];
-          newImageData[i] = decrypted[0];
-          newImageData[i + 1] = decrypted[1];
-          newImageData[i + 2] = decrypted[2];
+        const permutation = shuffleIndices(3, rand);
+        const reportFrequency = Math.max(4, Math.floor(data.length / 4 / 100) * 4); // ~100 updates, aligned to pixels
+
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const original = [r, g, b];
+            
+            if (mode === 'encrypt') {
+                newImageDataArray[i] = original[permutation[0]];
+                newImageDataArray[i + 1] = original[permutation[1]];
+                newImageDataArray[i + 2] = original[permutation[2]];
+            } else {
+                const decrypted = [0, 0, 0];
+                decrypted[permutation[0]] = original[0];
+                decrypted[permutation[1]] = original[1];
+                decrypted[permutation[2]] = original[2];
+                newImageDataArray[i] = decrypted[0];
+                newImageDataArray[i + 1] = decrypted[1];
+                newImageDataArray[i + 2] = decrypted[2];
+            }
+
+            if (i > 0 && (i % reportFrequency === 0)) {
+                await reportProgress(i / 4, newImageDataArray);
+                await yieldToMain();
+            }
         }
-      }
-      break;
+        break;
     }
     case 'xor-cipher': {
       // XOR is its own inverse, so encrypt and decrypt are the same.
+      const reportFrequency = Math.max(4, Math.floor(data.length / 4 / 100) * 4); // ~100 updates
       for (let i = 0; i < data.length; i += 4) {
         const keyByteR = Math.floor(rand() * 256);
         const keyByteG = Math.floor(rand() * 256);
         const keyByteB = Math.floor(rand() * 256);
 
-        newImageData[i] = data[i] ^ keyByteR;
-        newImageData[i + 1] = data[i + 1] ^ keyByteG;
-        newImageData[i + 2] = data[i + 2] ^ keyByteB;
+        newImageDataArray[i] = data[i] ^ keyByteR;
+        newImageDataArray[i + 1] = data[i + 1] ^ keyByteG;
+        newImageDataArray[i + 2] = data[i + 2] ^ keyByteB;
+        
+        if (i > 0 && (i % reportFrequency === 0)) {
+            await reportProgress(i / 4, newImageDataArray);
+            await yieldToMain();
+        }
       }
       break;
     }
@@ -103,5 +138,10 @@ export const processImage = (
       throw new Error('Unsupported image algorithm');
   }
 
-  return new ImageData(newImageData, width, height);
+  const finalImageData = new ImageData(newImageDataArray, width, height);
+  if (onProgress) {
+    await onProgress(100, finalImageData);
+  }
+
+  return finalImageData;
 };
