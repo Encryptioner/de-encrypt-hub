@@ -9,5 +9,10 @@
     { "name": "Rabbit", "value": "Rabbit", "description": "A high-performance stream cipher." },
     { "name": "RC4", "value": "RC4", "description": "Rivest Cipher 4 - A widely used stream cipher." },
     { "name": "RC4Drop", "value": "RC4Drop", "description": "RC4 with a modified key-scheduling algorithm, dropping initial output." }
+  ],
+  "imageAlgorithms": [
+    { "name": "Pixel Scramble", "value": "pixel-scramble", "description": "Shuffles the positions of pixels in the image based on the key. Creates a mosaic effect." },
+    { "name": "Color Scramble", "value": "color-scramble", "description": "Swaps the Red, Green, and Blue channels of each pixel based on the key. Distorts colors." },
+    { "name": "XOR Cipher", "value": "xor-cipher", "description": "Applies a bitwise XOR operation to each pixel's color values. Creates a noisy, static-like image." }
   ]
 }
