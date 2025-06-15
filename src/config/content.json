@@ -3,7 +3,54 @@
   "title": "De-encrypt Hub",
   "subtitle": "A versatile, browser-based toolkit for all your encryption, decryption, signing, and hashing needs.",
   "algorithms": [
-    { "name": "AES", "value": "AES", "description": "Advanced Encryption Standard - A widely used symmetric encryption algorithm." },
+    {
+      "name": "AES",
+      "value": "AES",
+      "description": "Advanced Encryption Standard - A widely used symmetric encryption algorithm.",
+      "principle": "AES operates on 128-bit blocks of data and uses a key that can be 128, 192, or 256 bits. It's an iterative cipher, meaning it applies the same set of transformations, called 'rounds', to the data block. The number of rounds depends on the key length (10, 12, or 14 rounds).",
+      "visualizationSteps": [
+        {
+          "title": "1. State Array Preparation",
+          "explanation": "The input text is converted into a 4x4 matrix of bytes, known as the 'state array'. This is the primary data structure that AES manipulates."
+        },
+        {
+          "title": "2. Key Expansion",
+          "explanation": "The secret key is expanded into a set of 'round keys'. A different round key is used for each round of encryption to ensure security."
+        },
+        {
+          "title": "3. Initial Round - AddRoundKey",
+          "explanation": "The initial state array is combined with the first round key using a bitwise XOR operation. This is the first step of scrambling the data."
+        },
+        {
+          "title": "4. Main Rounds (9 for 128-bit keys)",
+          "explanation": "The core of AES. This step is repeated multiple times. Each round consists of four transformations: SubBytes, ShiftRows, MixColumns, and AddRoundKey."
+        },
+        {
+          "title": "4a. SubBytes Transformation",
+          "explanation": "Each byte in the state array is substituted with another byte from a lookup table called the 'S-box'. This provides non-linearity to the encryption."
+        },
+        {
+          "title": "4b. ShiftRows Transformation",
+          "explanation": "The bytes in each row of the state array are cyclically shifted. This permutation step helps diffuse the data across the block."
+        },
+        {
+          "title": "4c. MixColumns Transformation",
+          "explanation": "Each column of the state array is transformed using a mathematical operation over a finite field. This provides further diffusion."
+        },
+        {
+          "title": "4d. AddRoundKey Transformation",
+          "explanation": "The state is XORed with the corresponding round key for the current round."
+        },
+        {
+          "title": "5. Final Round",
+          "explanation": "The final round is similar to a main round, but it omits the 'MixColumns' step."
+        },
+        {
+          "title": "6. Final Ciphertext",
+          "explanation": "After the final round, the state array holds the encrypted data, which is then presented as the final ciphertext."
+        }
+      ]
+    },
     { "name": "DES", "value": "DES", "description": "Data Encryption Standard - An older symmetric-key algorithm." },
     { "name": "TripleDES", "value": "TripleDES", "description": "Triple Data Encryption Algorithm - Applies DES three times." },
     { "name": "Rabbit", "value": "Rabbit", "description": "A high-performance stream cipher." },

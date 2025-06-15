@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,9 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import { Copy, RefreshCw, FileText, File as FileIcon, Download, Loader2 } from 'lucide-react';
 import content from '@/config/content.json';
 import { useCipher, Algorithm } from '@/hooks/useCipher';
+import { CipherVisualization } from './CipherVisualization';
 
 interface CipherToolProps {
   mode: 'encrypt' | 'decrypt';
@@ -23,6 +24,8 @@ export function CipherTool({ mode }: CipherToolProps) {
     algorithm, setAlgorithm,
     output,
     isProcessing,
+    showSteps, setShowSteps,
+    visualizationSteps,
     handleFileChange,
     handleEncrypt,
     handleDecrypt,
@@ -35,7 +38,7 @@ export function CipherTool({ mode }: CipherToolProps) {
   const [animatedOutput, setAnimatedOutput] = React.useState('');
 
   React.useEffect(() => {
-    if (isProcessing && inputType === 'text' && input) {
+    if (isProcessing && inputType === 'text' && input && !showSteps) {
       const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
       const interval = setInterval(() => {
         let result = '';
@@ -47,7 +50,10 @@ export function CipherTool({ mode }: CipherToolProps) {
 
       return () => clearInterval(interval);
     }
-  }, [isProcessing, inputType, input]);
+  }, [isProcessing, inputType, input, showSteps]);
+
+  const algorithmData = content.algorithms.find(a => a.value === algorithm);
+  const supportsSlowMode = algorithm === 'AES' && mode === 'encrypt';
 
   return (
     <>
@@ -87,6 +93,7 @@ export function CipherTool({ mode }: CipherToolProps) {
                 </div>
             )}
         </div>
+
         <div className="grid md:grid-cols-2 gap-4">
             <div className="grid gap-2">
             <Label htmlFor="key">Secret Key</Label>
@@ -115,6 +122,27 @@ export function CipherTool({ mode }: CipherToolProps) {
                 </Select>
             </div>
         </div>
+
+        {mode === 'encrypt' && (
+            <div className="flex items-center space-x-2 rounded-lg border p-4">
+                <Switch
+                    id="slow-mode-switch"
+                    checked={showSteps}
+                    onCheckedChange={(checked) => {
+                        setShowSteps(checked);
+                        if (!checked) {
+                            // You may want to clear visualization steps when turning off
+                        }
+                    }}
+                    disabled={!supportsSlowMode || isProcessing}
+                />
+                <Label htmlFor="slow-mode-switch" className="flex flex-col">
+                    Show Step-by-Step Visualization
+                    {!supportsSlowMode && <span className="text-xs font-normal text-muted-foreground">(Only available for AES Encryption)</span>}
+                </Label>
+            </div>
+        )}
+
         <div className="flex flex-col sm:flex-row gap-4">
             {mode === 'encrypt' ? (
                 <Button onClick={handleEncrypt} className="flex-1" disabled={isProcessing}>
@@ -129,7 +157,11 @@ export function CipherTool({ mode }: CipherToolProps) {
             )}
         </div>
 
-        {(output || isProcessing) && (
+        {showSteps && visualizationSteps.length > 0 && (
+            <CipherVisualization steps={visualizationSteps} principle={algorithmData?.principle} />
+        )}
+
+        {(output || (isProcessing && !showSteps)) && (
             <div className="grid gap-2 pt-4">
                 <div className="flex justify-between items-center">
                     <Label htmlFor="output">Result</Label>
@@ -151,14 +183,14 @@ export function CipherTool({ mode }: CipherToolProps) {
                 <Textarea
                     id="output"
                     readOnly
-                    value={isProcessing && inputType === 'text' ? animatedOutput : output}
+                    value={isProcessing && inputType === 'text' && !showSteps ? animatedOutput : output}
                     className="min-h-[120px] resize-y bg-muted/50"
                     placeholder={isProcessing ? (inputType === 'file' ? 'Processing file...' : '...') : 'Encrypted or decrypted output will appear here.'}
                 />
             </div>
         )}
       </div>
-      <p className="text-xs text-muted-foreground w-full text-center pt-6">{content.algorithms.find(a => a.value === algorithm)?.description}</p>
+      <p className="text-xs text-muted-foreground w-full text-center pt-6">{algorithmData?.description}</p>
     </>
   );
 }
