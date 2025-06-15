@@ -1,4 +1,3 @@
-
 {
   "title": "De-encrypt Hub",
   "subtitle": "A versatile, browser-based toolkit for all your encryption, decryption, signing, and hashing needs.",
@@ -92,11 +91,11 @@
         }
       ]
     },
-    { "name": "DES", "value": "DES", "description": "Data Encryption Standard - An older symmetric-key algorithm." },
-    { "name": "TripleDES", "value": "TripleDES", "description": "Triple Data Encryption Algorithm - Applies DES three times." },
-    { "name": "Rabbit", "value": "Rabbit", "description": "A high-performance stream cipher." },
-    { "name": "RC4", "value": "RC4", "description": "Rivest Cipher 4 - A widely used stream cipher." },
-    { "name": "RC4Drop", "value": "RC4Drop", "description": "RC4 with a modified key-scheduling algorithm, dropping initial output." }
+    { "name": "DES", "value": "DES", "description": "Data Encryption Standard - An older symmetric-key algorithm.", "principle": "DES is a block cipher that encrypts data in 64-bit blocks. It uses a 56-bit key and goes through 16 rounds of complex operations. It is now considered insecure for most applications due to its small key size." },
+    { "name": "TripleDES", "value": "TripleDES", "description": "Triple Data Encryption Algorithm - Applies DES three times.", "principle": "TripleDES applies the Data Encryption Standard (DES) algorithm three times to each data block. It provides a more secure alternative to DES but is slower than more modern ciphers like AES." },
+    { "name": "Rabbit", "value": "Rabbit", "description": "A high-performance stream cipher.", "principle": "Rabbit is a stream cipher that is designed for high performance in software. It uses a 128-bit key and a 64-bit initialization vector (IV) to generate a keystream that is XORed with the plaintext." },
+    { "name": "RC4", "value": "RC4", "description": "Rivest Cipher 4 - A widely used stream cipher.", "principle": "RC4 is a stream cipher with variable key length. It generates a pseudorandom keystream that is combined with the plaintext using XOR. Note: RC4 has known vulnerabilities and should be used with caution." },
+    { "name": "RC4Drop", "value": "RC4Drop", "description": "RC4 with a modified key-scheduling algorithm, dropping initial output.", "principle": "This is a variant of RC4 that discards the initial portion of the keystream to protect against certain attacks. However, it still shares vulnerabilities with the original RC4." }
   ],
   "imageAlgorithms": [
     { "name": "Pixel Scramble", "value": "pixel-scramble", "description": "Shuffles the positions of pixels in the image based on the key. Creates a mosaic effect." },
@@ -143,5 +142,14 @@
         "explanation": "The OAEP padding is removed from the result, revealing the original encoded message. The message is then decoded back to its original text form."
       }
     ]
+  },
+  "rsa-pss": {
+    "principle": "RSA-PSS is a signature scheme that provides stronger security guarantees than older methods like PKCS#1 v1.5. It involves hashing the data and then encrypting that hash with a private key, using a probabilistic padding scheme (PSS) to enhance security."
+  },
+  "ed25519": {
+    "principle": "Ed25519 is a high-speed, high-security digital signature algorithm based on elliptic curve cryptography (ECC) over Curve25519. It provides strong guarantees of authenticity and integrity with short signatures and keys."
+  },
+  "jwe": {
+    "principle": "JSON Web Encryption (JWE) is a standard for securely transmitting data between parties. The content (payload) is encrypted using a secret key, ensuring confidentiality. This implementation uses a key derived from your secret to perform the encryption."
   }
 }

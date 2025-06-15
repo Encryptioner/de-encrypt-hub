@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Switch } from './ui/switch';
 import { CipherVisualization } from './CipherVisualization';
 import { type VisualizationStep } from '@/hooks/useCipher';
+import content from '@/config/content.json';
 
 
 export function RsaTool() {
@@ -301,7 +303,7 @@ export function RsaTool() {
                   <div className="pt-4 border-t">
                     <CipherVisualization
                       steps={visualizationSteps}
-                      principle="RSA-PSS is a signature scheme that provides stronger security guarantees than older methods. It involves hashing the data and then encrypting that hash with a private key."
+                      principle={content['rsa-pss'].principle}
                     />
                   </div>
                 )}

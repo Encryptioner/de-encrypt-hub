@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Switch } from './ui/switch';
 import { CipherVisualization } from './CipherVisualization';
 import { type VisualizationStep } from '@/hooks/useCipher';
+import content from '@/config/content.json';
 
 /**
  * Derives a 256-bit key from a secret string using SHA-256.
@@ -89,17 +90,20 @@ export function JwtTool({ mode }: JwtToolProps) {
         await new Promise(res => setTimeout(res, 800));
         setVisualizationSteps(prev => prev.map((s, i) => i === 1 ? { ...s, status: 'done', data: 'Key derived successfully (not displayed for security).' } : s));
 
-        // Step 3 & 4
+        // Step 3
         await new Promise(res => setTimeout(res, 100));
-        setVisualizationSteps(prev => prev.map((s, i) => (i === 2 || i === 3) ? { ...s, status: 'processing' } : s));
-        
-        const jwe = await new EncryptJWT(payload).setProtectedHeader(header).setIssuedAt().encrypt(derivedKey);
-
+        setVisualizationSteps(prev => prev.map((s, i) => i === 2 ? { ...s, status: 'processing' } : s));
         await new Promise(res => setTimeout(res, 800));
-        setVisualizationSteps(prev => prev.map((s, i) => i === 2 ? { ...s, status: 'done', data: 'Payload is now encrypted ciphertext (not shown).' } : s));
+        const payloadSnippet = `Payload: ${input.substring(0, 100)}${input.length > 100 ? '...' : ''}`;
+        setVisualizationSteps(prev => prev.map((s, i) => i === 2 ? { ...s, status: 'done', data: `${payloadSnippet}\nPayload is now encrypted.` } : s));
         
+        // Step 4
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 3 ? { ...s, status: 'processing' } : s));
+        const jwe = await new EncryptJWT(payload).setProtectedHeader(header).setIssuedAt().encrypt(derivedKey);
         await new Promise(res => setTimeout(res, 500));
         setVisualizationSteps(prev => prev.map((s, i) => i === 3 ? { ...s, status: 'done', data: jwe } : s));
+        
         setOutput(jwe);
         toast.success('Slow-mode JWT encryption complete!');
     } catch (e: any) {
@@ -134,7 +138,7 @@ export function JwtTool({ mode }: JwtToolProps) {
         await new Promise(res => setTimeout(res, 100));
         setVisualizationSteps(prev => prev.map((s, i) => i === 0 ? { ...s, status: 'processing' } : s));
         await new Promise(res => setTimeout(res, 800));
-        setVisualizationSteps(prev => prev.map((s, i) => i === 0 ? { ...s, status: 'done', data: 'JWE parsed successfully.' } : s));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 0 ? { ...s, status: 'done', data: `JWE to decrypt: ${input.substring(0,60)}...` } : s));
 
         // Step 2
         await new Promise(res => setTimeout(res, 100));
@@ -375,7 +379,7 @@ export function JwtTool({ mode }: JwtToolProps) {
           <div className="pt-4">
             <CipherVisualization
               steps={visualizationSteps}
-              principle="JSON Web Encryption (JWE) is a standard for securely transmitting data. The content is encrypted using a secret key, ensuring confidentiality."
+              principle={content.jwe.principle}
             />
           </div>
         )}

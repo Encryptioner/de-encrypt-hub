@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from './ui/switch';
 import { useEd25519 } from '@/hooks/useEd25519';
 import { CipherVisualization } from './CipherVisualization';
+import content from '@/config/content.json';
 
 export function Ed25519Tool() {
   const {
@@ -104,7 +105,7 @@ export function Ed25519Tool() {
             <div className="pt-4 border-t">
               <CipherVisualization
                 steps={visualizationSteps}
-                principle="Ed25519 is a high-speed, high-security digital signature algorithm based on elliptic curve cryptography. It provides strong guarantees of authenticity and integrity."
+                principle={content.ed25519.principle}
               />
             </div>
         )}
