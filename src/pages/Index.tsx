@@ -31,6 +31,7 @@ const Index = () => {
         <div className="text-xs text-muted-foreground mt-4 space-y-1">
           <p>
             Developed by <a href="https://encryptioner.github.io/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Ankur Mursalin</a>.
+            <span className="sr-only">encryption for seo purpose</span>
           </p>
           <p>
             Copyright © {new Date().getFullYear()}. All rights reserved.
