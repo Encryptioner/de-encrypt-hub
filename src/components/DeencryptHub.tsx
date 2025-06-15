@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CipherTool } from "./CipherTool";
@@ -7,11 +8,11 @@ import { DigitalSignatureTool } from "./DigitalSignatureTool";
 import { RsaEncryptionTool } from "./RsaEncryptionTool";
 import { Lock, Unlock } from "lucide-react";
 
-export function CryptoKit() {
+export function DeencryptHub() {
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-2xl shadow-primary/5 dark:shadow-primary/10">
       <CardHeader>
-        <CardTitle className="text-2xl">CryptoKit</CardTitle>
+        <CardTitle className="text-2xl">De-encrypt Hub</CardTitle>
         <CardDescription>Select a category and then choose your desired tool.</CardDescription>
       </CardHeader>
       <CardContent>

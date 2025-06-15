@@ -1,6 +1,6 @@
 
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { CryptoKit } from "@/components/CryptoKit";
+import { DeencryptHub } from "@/components/DeencryptHub";
 import content from "@/config/content.json";
 import { Github, ShieldCheck } from "lucide-react";
 
@@ -20,7 +20,7 @@ const Index = () => {
         </div>
       </header>
       <main className="w-full flex-grow flex items-center justify-center">
-        <CryptoKit />
+        <DeencryptHub />
       </main>
       <footer className="w-full max-w-2xl mx-auto text-center py-8">
         <p className="text-sm text-muted-foreground">{content.subtitle}</p>

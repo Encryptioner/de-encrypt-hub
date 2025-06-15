@@ -1,7 +1,7 @@
 
 {
-  "title": "CryptoKit",
-  "subtitle": "A versatile toolkit for encryption, decryption, signing, and hashing.",
+  "title": "De-encrypt Hub",
+  "subtitle": "A versatile, browser-based toolkit for all your encryption, decryption, signing, and hashing needs.",
   "algorithms": [
     { "name": "AES", "value": "AES", "description": "Advanced Encryption Standard - A widely used symmetric encryption algorithm." },
     { "name": "DES", "value": "DES", "description": "Data Encryption Standard - An older symmetric-key algorithm." },
