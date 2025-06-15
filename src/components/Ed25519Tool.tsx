@@ -43,6 +43,11 @@ export function Ed25519Tool() {
         ['sign', 'verify']
       );
       
+      // Type guard to ensure we have a CryptoKeyPair
+      if (!('publicKey' in keyPair) || !('privateKey' in keyPair)) {
+        throw new Error("Key generation did not return a valid CryptoKeyPair.");
+      }
+
       const spkiPubKey = await window.crypto.subtle.exportKey('spki', keyPair.publicKey);
       const pkcs8PrivKey = await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
 
