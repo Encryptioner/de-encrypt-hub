@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CipherTool } from "./CipherTool";
@@ -5,7 +6,7 @@ import { JwtTool } from "./JwtTool";
 import { HashTool } from "./HashTool";
 import { DigitalSignatureTool } from "./DigitalSignatureTool";
 import { RsaEncryptionTool } from "./RsaEncryptionTool";
-import { Lock, Unlock, Image as ImageIcon } from "lucide-react";
+import { Lock, Unlock, Image as ImageIcon, ShieldCheck, KeyRound, FileJson, Signature, Hash } from "lucide-react";
 import { ImageCipherTool } from "./ImageCipherTool";
 
 export function DeencryptHub() {
@@ -27,17 +28,17 @@ export function DeencryptHub() {
 
           {/* Encryption / Signing Tools */}
           <TabsContent value="encrypt">
-            <Tabs defaultValue="ciphers" className="w-full pt-4">
+            <Tabs defaultValue="images" className="w-full pt-4">
               <TabsList className={level2TabsList}>
-                <TabsTrigger value="ciphers" className={level2TabsTrigger}>Ciphers</TabsTrigger>
                 <TabsTrigger value="images" className={level2TabsTrigger}><ImageIcon className="mr-2 h-4 w-4"/>Images</TabsTrigger>
-                <TabsTrigger value="rsa" className={level2TabsTrigger}>RSA</TabsTrigger>
-                <TabsTrigger value="jwt" className={level2TabsTrigger}>JWT</TabsTrigger>
-                <TabsTrigger value="signatures" className={level2TabsTrigger}>Digital Signatures</TabsTrigger>
-                <TabsTrigger value="hashing" className={level2TabsTrigger}>Hashing</TabsTrigger>
+                <TabsTrigger value="ciphers" className={level2TabsTrigger}><ShieldCheck className="mr-2 h-4 w-4"/>Ciphers</TabsTrigger>
+                <TabsTrigger value="rsa" className={level2TabsTrigger}><KeyRound className="mr-2 h-4 w-4"/>RSA</TabsTrigger>
+                <TabsTrigger value="jwt" className={level2TabsTrigger}><FileJson className="mr-2 h-4 w-4"/>JWT</TabsTrigger>
+                <TabsTrigger value="signatures" className={level2TabsTrigger}><Signature className="mr-2 h-4 w-4"/>Digital Signatures</TabsTrigger>
+                <TabsTrigger value="hashing" className={level2TabsTrigger}><Hash className="mr-2 h-4 w-4"/>Hashing</TabsTrigger>
               </TabsList>
-              <TabsContent value="ciphers" className="pt-6"><CipherTool mode="encrypt" /></TabsContent>
               <TabsContent value="images" className="pt-6"><ImageCipherTool mode="encrypt" /></TabsContent>
+              <TabsContent value="ciphers" className="pt-6"><CipherTool mode="encrypt" /></TabsContent>
               <TabsContent value="rsa" className="pt-6"><RsaEncryptionTool mode="encrypt" /></TabsContent>
               <TabsContent value="jwt" className="pt-6"><JwtTool mode="encrypt" /></TabsContent>
               <TabsContent value="signatures" className="pt-6"><DigitalSignatureTool /></TabsContent>
@@ -47,15 +48,15 @@ export function DeencryptHub() {
 
           {/* Decryption / Verification Tools */}
           <TabsContent value="decrypt">
-            <Tabs defaultValue="ciphers" className="w-full pt-4">
+            <Tabs defaultValue="images" className="w-full pt-4">
               <TabsList className={level2TabsList}>
-                <TabsTrigger value="ciphers" className={level2TabsTrigger}>Ciphers</TabsTrigger>
                 <TabsTrigger value="images" className={level2TabsTrigger}><ImageIcon className="mr-2 h-4 w-4"/>Images</TabsTrigger>
-                <TabsTrigger value="rsa" className={level2TabsTrigger}>RSA</TabsTrigger>
-                <TabsTrigger value="jwt" className={level2TabsTrigger}>JWT</TabsTrigger>
+                <TabsTrigger value="ciphers" className={level2TabsTrigger}><ShieldCheck className="mr-2 h-4 w-4"/>Ciphers</TabsTrigger>
+                <TabsTrigger value="rsa" className={level2TabsTrigger}><KeyRound className="mr-2 h-4 w-4"/>RSA</TabsTrigger>
+                <TabsTrigger value="jwt" className={level2TabsTrigger}><FileJson className="mr-2 h-4 w-4"/>JWT</TabsTrigger>
               </TabsList>
-              <TabsContent value="ciphers" className="pt-6"><CipherTool mode="decrypt" /></TabsContent>
               <TabsContent value="images" className="pt-6"><ImageCipherTool mode="decrypt" /></TabsContent>
+              <TabsContent value="ciphers" className="pt-6"><CipherTool mode="decrypt" /></TabsContent>
               <TabsContent value="rsa" className="pt-6"><RsaEncryptionTool mode="decrypt" /></TabsContent>
               <TabsContent value="jwt" className="pt-6"><JwtTool mode="decrypt" /></TabsContent>
             </Tabs>
