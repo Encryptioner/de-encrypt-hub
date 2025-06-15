@@ -46,26 +46,20 @@ export function HashTool() {
           />
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4 items-end">
-            <div className="grid gap-2">
-                <Label htmlFor="hash-algorithm">Algorithm</Label>
-                <Select value={algorithm} onValueChange={(value) => setAlgorithm(value as HashAlgorithm)} disabled={isProcessing}>
-                    <SelectTrigger id="hash-algorithm">
-                    <SelectValue placeholder="Select algorithm" />
-                    </SelectTrigger>
-                    <SelectContent>
-                    {hashAlgorithms.map((alg) => (
-                        <SelectItem key={alg.value} value={alg.value}>
-                        {alg.name}
-                        </SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <Button onClick={handleHash} className="w-full" disabled={isProcessing}>
-                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isProcessing ? 'Generating...' : 'Generate Hash'}
-            </Button>
+        <div className="grid gap-2">
+            <Label htmlFor="hash-algorithm">Algorithm</Label>
+            <Select value={algorithm} onValueChange={(value) => setAlgorithm(value as HashAlgorithm)} disabled={isProcessing}>
+                <SelectTrigger id="hash-algorithm">
+                <SelectValue placeholder="Select algorithm" />
+                </SelectTrigger>
+                <SelectContent>
+                {hashAlgorithms.map((alg) => (
+                    <SelectItem key={alg.value} value={alg.value}>
+                    {alg.name}
+                    </SelectItem>
+                ))}
+                </SelectContent>
+            </Select>
         </div>
 
         <div className="flex items-center space-x-2 rounded-lg border p-4">
@@ -77,6 +71,11 @@ export function HashTool() {
             />
             <Label htmlFor="slow-mode-switch">Show Step-by-Step Visualization</Label>
         </div>
+
+        <Button onClick={handleHash} className="w-full" disabled={isProcessing}>
+            {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isProcessing ? 'Generating...' : 'Generate Hash'}
+        </Button>
 
         {showSteps && visualizationSteps.length > 0 && (
             <CipherVisualization
