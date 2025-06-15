@@ -10,7 +10,7 @@ import { Copy, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import content from '@/config/content.json';
 
-type Algorithm = 'AES' | 'DES' | 'TripleDES' | 'Rabbit' | 'RC4';
+type Algorithm = 'AES' | 'DES' | 'TripleDES' | 'Rabbit' | 'RC4' | 'RC4Drop';
 
 export function CipherTool() {
   const [input, setInput] = useState('');

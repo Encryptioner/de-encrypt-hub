@@ -7,6 +7,7 @@ const algorithms = {
   TripleDES: CryptoJS.TripleDES,
   Rabbit: CryptoJS.Rabbit,
   RC4: CryptoJS.RC4,
+  RC4Drop: CryptoJS.RC4Drop,
 };
 
 type Algorithm = keyof typeof algorithms;

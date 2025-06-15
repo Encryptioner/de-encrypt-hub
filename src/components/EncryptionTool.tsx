@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CipherTool } from "./CipherTool";
 import { JwtTool } from "./JwtTool";
+import { RsaTool } from "./RsaTool";
 
 export function EncryptionTool() {
   return (
@@ -13,15 +14,19 @@ export function EncryptionTool() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="ciphers" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="ciphers">Ciphers</TabsTrigger>
             <TabsTrigger value="jwt">JWT (JWE)</TabsTrigger>
+            <TabsTrigger value="rsa">RSA</TabsTrigger>
           </TabsList>
           <TabsContent value="ciphers">
             <CipherTool />
           </TabsContent>
           <TabsContent value="jwt">
             <JwtTool />
+          </TabsContent>
+          <TabsContent value="rsa">
+            <RsaTool />
           </TabsContent>
         </Tabs>
       </CardContent>

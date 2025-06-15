@@ -7,6 +7,7 @@
     { "name": "DES", "value": "DES", "description": "Data Encryption Standard - An older symmetric-key algorithm." },
     { "name": "TripleDES", "value": "TripleDES", "description": "Triple Data Encryption Algorithm - Applies DES three times." },
     { "name": "Rabbit", "value": "Rabbit", "description": "A high-performance stream cipher." },
-    { "name": "RC4", "value": "RC4", "description": "Rivest Cipher 4 - A widely used stream cipher." }
+    { "name": "RC4", "value": "RC4", "description": "Rivest Cipher 4 - A widely used stream cipher." },
+    { "name": "RC4Drop", "value": "RC4Drop", "description": "RC4 with a modified key-scheduling algorithm, dropping initial output." }
   ]
 }
