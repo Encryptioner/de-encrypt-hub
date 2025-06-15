@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { encrypt, decrypt, type Algorithm } from '@/lib/crypto';
@@ -8,6 +9,7 @@ export interface VisualizationStep {
   explanation: string;
   data: string;
   status: 'pending' | 'processing' | 'done';
+  dataType?: 'image' | 'text';
 }
 
 export type { Algorithm };
