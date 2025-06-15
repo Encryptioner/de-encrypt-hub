@@ -1,11 +1,12 @@
-import { useState } from 'react';
+
+import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 import { EncryptJWT, jwtDecrypt } from 'jose';
-import { Copy, RefreshCw, Download, FileText, File as FileIcon } from 'lucide-react';
+import { Copy, RefreshCw, Download, FileText, File as FileIcon, Loader2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 
 /**
@@ -23,11 +24,30 @@ interface JwtToolProps {
 }
 
 export function JwtTool({ mode }: JwtToolProps) {
-  const [input, setInput] = useState(mode === 'encrypt' ? '{\n  "message": "Hello from Lovable!"\n}' : '');
-  const [secret, setSecret] = useState('');
-  const [output, setOutput] = useState('');
-  const [decryptInputType, setDecryptInputType] = useState<'text' | 'file'>('text');
-  const [decryptFile, setDecryptFile] = useState<globalThis.File | null>(null);
+  const [input, setInput] = React.useState(mode === 'encrypt' ? '{\n  "message": "Hello from Lovable!"\n}' : '');
+  const [secret, setSecret] = React.useState('');
+  const [output, setOutput] = React.useState('');
+  const [decryptInputType, setDecryptInputType] = React.useState<'text' | 'file'>('text');
+  const [decryptFile, setDecryptFile] = React.useState<globalThis.File | null>(null);
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [animatedOutput, setAnimatedOutput] = React.useState('');
+
+  React.useEffect(() => {
+    if (isProcessing && input) {
+      const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-';
+      const interval = setInterval(() => {
+        let result = '';
+        const length = mode === 'encrypt' ? JSON.stringify(JSON.parse(input)).length * 1.5 : input.length;
+        for (let i = 0; i < length; i++) {
+          result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+        }
+        setAnimatedOutput(result);
+      }, 50);
+
+      return () => clearInterval(interval);
+    }
+  }, [isProcessing, input, mode]);
+
 
   const handleEncrypt = async () => {
     if (!input || !secret) {
@@ -42,6 +62,8 @@ export function JwtTool({ mode }: JwtToolProps) {
       return;
     }
 
+    setIsProcessing(true);
+    setOutput('');
     try {
       const derivedKey = await getDerivedKey(secret);
       const jwe = await new EncryptJWT(payload)
@@ -53,6 +75,9 @@ export function JwtTool({ mode }: JwtToolProps) {
       toast.success('Payload encrypted successfully as JWT!');
     } catch (error: any) {
       toast.error(error.message || 'JWT encryption failed.');
+      setOutput('');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -61,6 +86,8 @@ export function JwtTool({ mode }: JwtToolProps) {
       toast.error('JWT and secret key cannot be empty.');
       return;
     }
+    setIsProcessing(true);
+    setOutput('');
     try {
       const derivedKey = await getDerivedKey(secret);
       const { payload } = await jwtDecrypt(input, derivedKey);
@@ -68,6 +95,9 @@ export function JwtTool({ mode }: JwtToolProps) {
       toast.success('JWT decrypted successfully!');
     } catch (error: any) {
       toast.error(error.message || 'JWT decryption failed.');
+      setOutput('');
+    } finally {
+      setIsProcessing(false);
     }
   };
   
@@ -142,6 +172,7 @@ export function JwtTool({ mode }: JwtToolProps) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               className="min-h-[120px] resize-y"
+              disabled={isProcessing}
             />
           ) : (
              <div className="space-y-2">
@@ -150,6 +181,7 @@ export function JwtTool({ mode }: JwtToolProps) {
                     value={decryptInputType}
                     onValueChange={(value) => setDecryptInputType(value as 'text' | 'file')}
                     className="flex items-center gap-4 py-2"
+                    disabled={isProcessing}
                 >
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="text" id="jwt-text-type" />
@@ -168,10 +200,11 @@ export function JwtTool({ mode }: JwtToolProps) {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       className="min-h-[120px] resize-y font-mono text-sm"
+                      disabled={isProcessing}
                     />
                 ) : (
                     <div className="grid gap-2">
-                        <Input type="file" onChange={handleDecryptFileChange} />
+                        <Input type="file" onChange={handleDecryptFileChange} disabled={isProcessing} />
                         {decryptFile && <p className="text-sm text-muted-foreground">Selected: {decryptFile.name}</p>}
                     </div>
                 )}
@@ -186,30 +219,37 @@ export function JwtTool({ mode }: JwtToolProps) {
               placeholder="Your secret key..."
               value={secret}
               onChange={(e) => setSecret(e.target.value)}
+              disabled={isProcessing}
           />
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
             {mode === 'encrypt' ? (
-              <Button onClick={handleEncrypt} className="flex-1">Encrypt JWT</Button>
+              <Button onClick={handleEncrypt} className="flex-1" disabled={isProcessing}>
+                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isProcessing ? 'Encrypting...' : 'Encrypt JWT'}
+              </Button>
             ) : (
-              <Button onClick={handleDecrypt} className="flex-1" variant="secondary">Decrypt JWT</Button>
+              <Button onClick={handleDecrypt} className="flex-1" variant="secondary" disabled={isProcessing}>
+                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isProcessing ? 'Decrypting...' : 'Decrypt JWT'}
+              </Button>
             )}
         </div>
 
-        {output && (
+        {(output || isProcessing) && (
             <div className="grid gap-2 pt-4">
             <div className="flex justify-between items-center">
                 <Label htmlFor="jwt-output">Result</Label>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="icon" onClick={handleDownload} title="Download Result">
+                  <Button variant="ghost" size="icon" onClick={handleDownload} title="Download Result" disabled={isProcessing}>
                     <Download className="w-4 h-4" />
                     <span className="sr-only">Download</span>
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={handleSwap} title="Use as Input">
+                  <Button variant="ghost" size="icon" onClick={handleSwap} title="Use as Input" disabled={isProcessing}>
                     <RefreshCw className="w-4 h-4" />
                     <span className="sr-only">Use as Input</span>
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={handleCopy} title="Copy to Clipboard">
+                  <Button variant="ghost" size="icon" onClick={handleCopy} title="Copy to Clipboard" disabled={isProcessing}>
                     <Copy className="w-4 h-4" />
                     <span className="sr-only">Copy</span>
                   </Button>
@@ -218,7 +258,7 @@ export function JwtTool({ mode }: JwtToolProps) {
             <Textarea
                 id="jwt-output"
                 readOnly
-                value={output}
+                value={isProcessing ? animatedOutput : output}
                 className="min-h-[120px] resize-y bg-muted/50 font-mono text-sm"
             />
             </div>

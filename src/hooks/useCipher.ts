@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { encrypt, decrypt } from '@/lib/crypto';
@@ -16,6 +17,7 @@ export function useCipher({ mode }: UseCipherProps) {
   const [key, setKey] = useState('');
   const [algorithm, setAlgorithm] = useState<Algorithm>('AES');
   const [output, setOutput] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -49,26 +51,40 @@ export function useCipher({ mode }: UseCipherProps) {
       dataToEncrypt = arrayBufferToBase64(buffer);
     }
     
+    setIsProcessing(true);
+    setOutput('');
     try {
+      // Artificial delay for animation
+      await new Promise(res => setTimeout(res, inputType === 'text' ? 500 : 1000));
       const result = encrypt(dataToEncrypt, key, algorithm);
       setOutput(result);
       toast.success('Encryption successful!');
     } catch (error: any) {
       toast.error(error.message || 'Encryption failed.');
+      setOutput('');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleDecrypt = () => {
+  const handleDecrypt = async () => {
     if (!input || !key) {
       toast.error('Input ciphertext and key cannot be empty.');
       return;
     }
+    setIsProcessing(true);
+    setOutput('');
     try {
+      // Artificial delay for animation
+      await new Promise(res => setTimeout(res, 500));
       const result = decrypt(input, key, algorithm);
       setOutput(result);
       toast.success('Decryption successful!');
     } catch (error: any) {
       toast.error(error.message || 'Decryption failed.');
+      setOutput('');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -137,6 +153,7 @@ export function useCipher({ mode }: UseCipherProps) {
     key, setKey,
     algorithm, setAlgorithm,
     output,
+    isProcessing,
     handleFileChange,
     handleEncrypt,
     handleDecrypt,

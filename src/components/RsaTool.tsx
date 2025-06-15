@@ -1,9 +1,10 @@
-import { useState } from 'react';
+
+import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
-import { Copy, Key, FileText, File as FileIcon, Download } from 'lucide-react';
+import { Copy, Key, FileText, File as FileIcon, Download, Loader2 } from 'lucide-react';
 import { Input } from './ui/input';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { arrayBufferToBase64 } from '@/lib/utils';
@@ -11,15 +12,32 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 
 export function RsaTool() {
-  const [publicKey, setPublicKey] = useState('');
-  const [privateKey, setPrivateKey] = useState('');
+  const [publicKey, setPublicKey] = React.useState('');
+  const [privateKey, setPrivateKey] = React.useState('');
   
   // Signing state
-  const [signInputType, setSignInputType] = useState<'text' | 'file'>('text');
-  const [signTextInput, setSignTextInput] = useState('This is a test message.');
-  const [signFile, setSignFile] = useState<globalThis.File | null>(null);
-  const [signFileBuffer, setSignFileBuffer] = useState<ArrayBuffer | null>(null);
-  const [signature, setSignature] = useState('');
+  const [signInputType, setSignInputType] = React.useState<'text' | 'file'>('text');
+  const [signTextInput, setSignTextInput] = React.useState('This is a test message.');
+  const [signFile, setSignFile] = React.useState<globalThis.File | null>(null);
+  const [signFileBuffer, setSignFileBuffer] = React.useState<ArrayBuffer | null>(null);
+  const [signature, setSignature] = React.useState('');
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [animatedSignature, setAnimatedSignature] = React.useState('');
+
+  React.useEffect(() => {
+    if (isProcessing) {
+      const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+      const interval = setInterval(() => {
+        let result = '';
+        for (let i = 0; i < 344; i++) { // 2048 bit signature is 256 bytes -> ~344 Base64 chars
+          result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+        }
+        setAnimatedSignature(result);
+      }, 50);
+
+      return () => clearInterval(interval);
+    }
+  }, [isProcessing]);
 
   const handleGenerateKeys = async () => {
     try {
@@ -89,8 +107,11 @@ export function RsaTool() {
       }
       dataToSign = signFileBuffer;
     }
-
+    
+    setIsProcessing(true);
+    setSignature('');
     try {
+      await new Promise(res => setTimeout(res, 500)); // artifical delay
       const privateKeyJwk = JSON.parse(privateKey);
       const key = await window.crypto.subtle.importKey(
         'jwk',
@@ -109,6 +130,8 @@ export function RsaTool() {
     } catch (error) {
       toast.error('Signing failed. Ensure the private key is correct.');
       console.error(error);
+    } finally {
+        setIsProcessing(false);
     }
   };
 
@@ -139,7 +162,7 @@ export function RsaTool() {
     <>
       <div className="space-y-6 pt-4">
         <div className="flex justify-end">
-          <Button onClick={handleGenerateKeys} variant="outline">
+          <Button onClick={handleGenerateKeys} variant="outline" disabled={isProcessing}>
             <Key className="mr-2" />
             Generate New 2048-bit Key Pair
           </Button>
@@ -148,15 +171,15 @@ export function RsaTool() {
         <div className="grid md:grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="rsa-public-key">Public Key (JWK)</Label>
-            <Textarea id="rsa-public-key" placeholder='Your public key in JSON Web Key format...' value={publicKey} onChange={(e) => setPublicKey(e.target.value)} className="min-h-[160px] resize-y font-mono text-xs" />
-            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(publicKey)}>
+            <Textarea id="rsa-public-key" placeholder='Your public key in JSON Web Key format...' value={publicKey} onChange={(e) => setPublicKey(e.target.value)} className="min-h-[160px] resize-y font-mono text-xs" disabled={isProcessing}/>
+            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(publicKey)} disabled={isProcessing}>
                 <Copy className="mr-2"/> Copy Public Key
             </Button>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="rsa-private-key">Private Key (JWK)</Label>
-            <Textarea id="rsa-private-key" placeholder='Your private key in JSON Web Key format...' value={privateKey} onChange={(e) => setPrivateKey(e.target.value)} className="min-h-[160px] resize-y font-mono text-xs" />
-            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(privateKey)}>
+            <Textarea id="rsa-private-key" placeholder='Your private key in JSON Web Key format...' value={privateKey} onChange={(e) => setPrivateKey(e.target.value)} className="min-h-[160px] resize-y font-mono text-xs" disabled={isProcessing}/>
+            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(privateKey)} disabled={isProcessing}>
                 <Copy className="mr-2"/> Copy Private Key
             </Button>
           </div>
@@ -178,6 +201,7 @@ export function RsaTool() {
                             setSignature('');
                         }}
                         className="flex items-center gap-4 py-2"
+                        disabled={isProcessing}
                     >
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="text" id="rsa-sign-text-type" />
@@ -196,31 +220,35 @@ export function RsaTool() {
                             value={signTextInput}
                             onChange={(e) => { setSignTextInput(e.target.value); setSignature(''); }}
                             className="min-h-[120px] resize-y"
+                            disabled={isProcessing}
                         />
                     ) : (
                         <div className="grid gap-2">
-                            <Input id="rsa-sign-file-input" type="file" onChange={handleSignFileChange} />
+                            <Input id="rsa-sign-file-input" type="file" onChange={handleSignFileChange} disabled={isProcessing}/>
                             {signFile && <p className="text-sm text-muted-foreground">Selected: {signFile.name} ({(signFile.size / 1024).toFixed(2)} KB)</p>}
                         </div>
                     )}
                 </div>
-                <Button onClick={handleSign} className="w-full">Sign with Private Key</Button>
-                {signature && (
+                <Button onClick={handleSign} className="w-full" disabled={isProcessing || !privateKey}>
+                    {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isProcessing ? 'Signing...' : 'Sign with Private Key'}
+                </Button>
+                {(signature || isProcessing) && (
                     <div className="grid gap-2 pt-4 border-t">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="rsa-signature">Generated Signature (Base64)</Label>
                             <div>
-                                <Button variant="ghost" size="icon" onClick={handleDownloadSignature} title="Download Signature">
+                                <Button variant="ghost" size="icon" onClick={handleDownloadSignature} title="Download Signature" disabled={isProcessing}>
                                     <Download className="w-4 h-4" />
                                     <span className="sr-only">Download</span>
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard">
+                                <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard" disabled={isProcessing}>
                                     <Copy className="w-4 h-4" />
                                     <span className="sr-only">Copy</span>
                                 </Button>
                             </div>
                         </div>
-                        <Textarea id="rsa-signature" readOnly value={signature} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
+                        <Textarea id="rsa-signature" readOnly value={isProcessing ? animatedSignature : signature} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
                     </div>
                 )}
             </CardContent>

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+
+import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
-import { Copy, Key, FileText, File } from 'lucide-react';
+import { Copy, Key, FileText, File, Loader2 } from 'lucide-react';
 import { Input } from './ui/input';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -29,13 +30,30 @@ function base64ToArrayBuffer(base64: string) {
 }
 
 export function Ed25519Tool() {
-  const [publicKey, setPublicKey] = useState('');
-  const [privateKey, setPrivateKey] = useState('');
-  const [inputType, setInputType] = useState<'text' | 'file'>('text');
-  const [textInput, setTextInput] = useState('This is a test message.');
-  const [file, setFile] = useState<globalThis.File | null>(null);
-  const [fileBuffer, setFileBuffer] = useState<ArrayBuffer | null>(null);
-  const [signature, setSignature] = useState('');
+  const [publicKey, setPublicKey] = React.useState('');
+  const [privateKey, setPrivateKey] = React.useState('');
+  const [inputType, setInputType] = React.useState<'text' | 'file'>('text');
+  const [textInput, setTextInput] = React.useState('This is a test message.');
+  const [file, setFile] = React.useState<globalThis.File | null>(null);
+  const [fileBuffer, setFileBuffer] = React.useState<ArrayBuffer | null>(null);
+  const [signature, setSignature] = React.useState('');
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [animatedSignature, setAnimatedSignature] = React.useState('');
+  
+  React.useEffect(() => {
+    if (isProcessing) {
+      const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+      const interval = setInterval(() => {
+        let result = '';
+        for (let i = 0; i < 88; i++) { // Ed25519 signatures are 64 bytes -> 88 Base64 chars
+          result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+        }
+        setAnimatedSignature(result);
+      }, 50);
+
+      return () => clearInterval(interval);
+    }
+  }, [isProcessing]);
 
   const handleGenerateKeys = async () => {
     try {
@@ -106,7 +124,10 @@ export function Ed25519Tool() {
       dataToSign = fileBuffer;
     }
 
+    setIsProcessing(true);
+    setSignature('');
     try {
+      await new Promise(res => setTimeout(res, 500)); // artifical delay
       const privateKeyBuffer = base64ToArrayBuffer(privateKey);
       const key = await window.crypto.subtle.importKey(
         'pkcs8',
@@ -125,6 +146,8 @@ export function Ed25519Tool() {
     } catch (error) {
       toast.error('Signing failed. Ensure the private key is correct.');
       console.error(error);
+    } finally {
+      setIsProcessing(false);
     }
   };
   
@@ -138,7 +161,7 @@ export function Ed25519Tool() {
     <>
       <div className="space-y-6 pt-4">
         <div className="flex justify-end">
-          <Button onClick={handleGenerateKeys} variant="outline">
+          <Button onClick={handleGenerateKeys} variant="outline" disabled={isProcessing}>
             <Key className="mr-2" />
             Generate New Ed25519 Key Pair
           </Button>
@@ -147,13 +170,13 @@ export function Ed25519Tool() {
         <div className="grid md:grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="ed-public-key">Public Key (Base64)</Label>
-            <Textarea id="ed-public-key" placeholder='Base64-encoded public key...' value={publicKey} onChange={(e) => setPublicKey(e.target.value)} className="min-h-[120px] resize-y font-mono text-xs" />
-            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(publicKey)}><Copy className="mr-2"/> Copy Public Key</Button>
+            <Textarea id="ed-public-key" placeholder='Base64-encoded public key...' value={publicKey} onChange={(e) => setPublicKey(e.target.value)} className="min-h-[120px] resize-y font-mono text-xs" disabled={isProcessing}/>
+            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(publicKey)} disabled={isProcessing}><Copy className="mr-2"/> Copy Public Key</Button>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="ed-private-key">Private Key (Base64)</Label>
-            <Textarea id="ed-private-key" placeholder='Base64-encoded private key...' value={privateKey} onChange={(e) => setPrivateKey(e.target.value)} className="min-h-[120px] resize-y font-mono text-xs" />
-            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(privateKey)}><Copy className="mr-2"/> Copy Private Key</Button>
+            <Textarea id="ed-private-key" placeholder='Base64-encoded private key...' value={privateKey} onChange={(e) => setPrivateKey(e.target.value)} className="min-h-[120px] resize-y font-mono text-xs" disabled={isProcessing}/>
+            <Button variant="ghost" size="sm" className="w-fit" onClick={() => handleCopy(privateKey)} disabled={isProcessing}><Copy className="mr-2"/> Copy Private Key</Button>
           </div>
         </div>
 
@@ -167,6 +190,7 @@ export function Ed25519Tool() {
                     setSignature('');
                 }}
                 className="flex items-center gap-4 py-2"
+                disabled={isProcessing}
             >
                 <div className="flex items-center space-x-2">
                     <RadioGroupItem value="text" id="ed-text-type" />
@@ -185,29 +209,33 @@ export function Ed25519Tool() {
                     value={textInput}
                     onChange={(e) => { setTextInput(e.target.value); setSignature(''); }}
                     className="min-h-[100px] resize-y"
+                    disabled={isProcessing}
                 />
             ) : (
                 <div className="grid gap-2">
-                    <Input id="ed-file-input" type="file" onChange={handleFileChange} />
+                    <Input id="ed-file-input" type="file" onChange={handleFileChange} disabled={isProcessing} />
                     {file && <p className="text-sm text-muted-foreground">Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)</p>}
                 </div>
             )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
-          <Button onClick={handleSign} className="flex-1">Sign with Private Key</Button>
+          <Button onClick={handleSign} className="flex-1" disabled={isProcessing || !privateKey}>
+            {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isProcessing ? 'Signing...' : 'Sign with Private Key'}
+          </Button>
         </div>
         
-        {signature && (
+        {(signature || isProcessing) && (
             <div className="grid gap-2 pt-4 border-t">
                 <div className="flex justify-between items-center">
                     <Label htmlFor="ed-signature">Generated Signature (Base64)</Label>
-                    <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard">
+                    <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard" disabled={isProcessing}>
                         <Copy className="w-4 h-4" />
                         <span className="sr-only">Copy</span>
                     </Button>
                 </div>
-                <Textarea id="ed-signature" readOnly value={signature} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
+                <Textarea id="ed-signature" readOnly value={isProcessing ? animatedSignature : signature} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
             </div>
         )}
         
