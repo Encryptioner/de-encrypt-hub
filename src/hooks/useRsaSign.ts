@@ -1,28 +1,31 @@
+
 import * as React from 'react';
 import { toast } from 'sonner';
 import { type VisualizationStep } from '@/hooks/useCipher';
 import { arrayBufferToBase64, base64ToArrayBuffer } from '@/lib/utils';
 
-export function useEd25519() {
+export function useRsaSign() {
   const [publicKey, setPublicKey] = React.useState('');
   const [privateKey, setPrivateKey] = React.useState('');
-  const [inputType, setInputType] = React.useState<'text' | 'file'>('text');
-  const [textInput, setTextInput] = React.useState('This is a test message.');
-  const [file, setFile] = React.useState<File | null>(null);
-  const [fileBuffer, setFileBuffer] = React.useState<ArrayBuffer | null>(null);
+  
+  // Signing state
+  const [signInputType, setSignInputType] = React.useState<'text' | 'file'>('text');
+  const [signTextInput, setSignTextInput] = React.useState('This is a test message.');
+  const [signFile, setSignFile] = React.useState<globalThis.File | null>(null);
+  const [signFileBuffer, setSignFileBuffer] = React.useState<ArrayBuffer | null>(null);
   const [signature, setSignature] = React.useState('');
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [processingAction, setProcessingAction] = React.useState<'sign' | 'verify' | null>(null);
   const [animatedSignature, setAnimatedSignature] = React.useState('');
   const [showSteps, setShowSteps] = React.useState(false);
   const [visualizationSteps, setVisualizationSteps] = React.useState<VisualizationStep[]>([]);
-  
+
   React.useEffect(() => {
     if (isProcessing && processingAction === 'sign' && !showSteps) {
       const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
       const interval = setInterval(() => {
         let result = '';
-        for (let i = 0; i < 88; i++) { // Ed25519 signatures are 64 bytes -> 88 Base64 chars
+        for (let i = 0; i < 344; i++) { // 2048 bit signature is 256 bytes -> ~344 Base64 chars
           result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
         }
         setAnimatedSignature(result);
@@ -35,42 +38,47 @@ export function useEd25519() {
   const handleGenerateKeys = async () => {
     try {
       const keyPair = await window.crypto.subtle.generateKey(
-        { name: 'Ed25519' }, true, ['sign', 'verify']
+        {
+          name: 'RSA-PSS',
+          modulusLength: 2048,
+          publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+          hash: 'SHA-256',
+        },
+        true,
+        ['sign', 'verify']
       );
       
-      if (!('publicKey' in keyPair) || !('privateKey' in keyPair)) {
-        throw new Error("Key generation did not return a valid CryptoKeyPair.");
-      }
+      const publicKeyJwk = await window.crypto.subtle.exportKey('jwk', keyPair.publicKey);
+      const privateKeyJwk = await window.crypto.subtle.exportKey('jwk', keyPair.privateKey);
 
-      const spkiPubKey = await window.crypto.subtle.exportKey('spki', keyPair.publicKey);
-      const pkcs8PrivKey = await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
-
-      setPublicKey(arrayBufferToBase64(spkiPubKey));
-      setPrivateKey(arrayBufferToBase64(pkcs8PrivKey));
+      setPublicKey(JSON.stringify(publicKeyJwk, null, 2));
+      setPrivateKey(JSON.stringify(privateKeyJwk, null, 2));
       setSignature('');
-      toast.success('Ed25519 key pair generated!');
+      toast.success('RSA key pair generated successfully for signing!');
     } catch (error) {
-      toast.error('Failed to generate keys. Your browser may not support Ed25519.');
+      toast.error('Failed to generate keys.');
       console.error(error);
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSignFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
-      setFile(selectedFile);
+      setSignFile(selectedFile);
       const reader = new FileReader();
       reader.onload = (e) => {
         const buffer = e.target?.result;
         if (buffer instanceof ArrayBuffer) {
-          setFileBuffer(buffer);
+          setSignFileBuffer(buffer);
           setSignature('');
-          toast.success(`File "${selectedFile.name}" loaded.`);
+          toast.success(`File for signing "${selectedFile.name}" loaded.`);
         } else {
           toast.error("Failed to read file as ArrayBuffer.");
         }
       };
-      reader.onerror = () => toast.error("Error reading file.");
+      reader.onerror = () => {
+        toast.error("Error reading file.");
+      };
       reader.readAsArrayBuffer(selectedFile);
     }
   };
@@ -81,41 +89,41 @@ export function useEd25519() {
     setSignature('');
 
     const steps = [
-        { title: '1. Load Data & Private Key', explanation: 'The signing process begins with your data and your secret Ed25519 private key. This key is the foundation of the signature and must be kept absolutely secret.' },
-        { title: '2. Hash Message (SHA-512)', explanation: 'The Ed25519 algorithm first hashes the entire message using SHA-512. This creates a unique, fixed-size fingerprint of your data, ensuring that even a tiny change would be detected.' },
-        { title: '3. Sign with Private Key', explanation: 'The algorithm then uses your private key and the message hash to perform calculations on a special elliptic curve (Curve25519). This generates a digital signature that is mathematically linked to both your key and your data.' },
-        { title: '4. Final Signature', explanation: 'This is the final signature. It can be shared publicly with your public key and the original data. Anyone can verify it, but only someone with your private key could have created it.' },
+        { title: '1. Hash Data (SHA-256)', explanation: 'First, the input data is processed by the SHA-256 hash function. This creates a unique, fixed-size "fingerprint" of the data. Any change to the original data, no matter how small, will result in a completely different hash.' },
+        { title: '2. Sign Hash with Private Key', explanation: 'The generated hash (not the original data) is then encrypted using your secret private key and the RSA-PSS padding scheme. Only this specific private key can create this signature, proving you are the author.' },
+        { title: '3. Final Signature', explanation: 'The output is the Base64 encoded digital signature. This can be published alongside the original data. Anyone with your public key can use it to verify that the data came from you and has not been tampered with.' },
     ];
     
     const initialSteps: VisualizationStep[] = steps.map(s => ({ ...s, data: '', status: 'pending' }));
     setVisualizationSteps(initialSteps);
     
     try {
-        for (let i = 0; i < initialSteps.length; i++) {
-            await new Promise(res => setTimeout(res, 100));
-            setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'processing', data: '...' } : s)));
-            await new Promise(res => setTimeout(res, 800));
+        // Step 1
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 0 ? { ...s, status: 'processing' } : s));
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', dataToSign);
+        const hashBase64 = arrayBufferToBase64(hashBuffer);
+        await new Promise(res => setTimeout(res, 800));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 0 ? { ...s, status: 'done', data: `Hash: ${hashBase64.substring(0, 44)}...` } : s));
+        
+        // Step 2
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 1 ? { ...s, status: 'processing' } : s));
+        const privateKeyJwk = JSON.parse(privateKey);
+        const key = await window.crypto.subtle.importKey('jwk', privateKeyJwk, { name: 'RSA-PSS', hash: 'SHA-256' }, true, ['sign']);
+        const sigBuffer = await window.crypto.subtle.sign({ name: 'RSA-PSS', saltLength: 32 }, key, dataToSign);
+        const finalSignature = arrayBufferToBase64(sigBuffer);
+        await new Promise(res => setTimeout(res, 800));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 1 ? { ...s, status: 'done', data: 'Hash successfully signed with private key.' } : s));
 
-            let stepData = '';
-            if (i === 0) {
-                stepData = `Private key and data loaded.`;
-            } else if (i === 1) {
-                const hashBuffer = await window.crypto.subtle.digest('SHA-512', dataToSign);
-                stepData = `Message Hash: ${arrayBufferToBase64(hashBuffer).substring(0, 44)}...`;
-            } else if (i === 2) {
-                stepData = `Signing hash with private key using elliptic curve math...`;
-            } else {
-                const privateKeyBuffer = base64ToArrayBuffer(privateKey);
-                const key = await window.crypto.subtle.importKey('pkcs8', privateKeyBuffer, { name: 'Ed25519' }, true, ['sign']);
-                const sig = await window.crypto.subtle.sign('Ed25519', key, dataToSign);
-                const finalSignature = arrayBufferToBase64(sig);
-                stepData = finalSignature;
-                setSignature(finalSignature);
-            }
-            
-            setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
-        }
-        toast.success("Signing visualization complete!");
+        // Step 3
+        await new Promise(res => setTimeout(res, 100));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 2 ? { ...s, status: 'processing' } : s));
+        await new Promise(res => setTimeout(res, 800));
+        setVisualizationSteps(prev => prev.map((s, i) => i === 2 ? { ...s, status: 'done', data: finalSignature } : s));
+        
+        setSignature(finalSignature);
+        toast.success('Slow-mode signing complete!');
     } catch (e: any) {
         toast.error('Signing failed. Ensure the private key is correct.');
     } finally {
@@ -127,11 +135,12 @@ export function useEd25519() {
   const runSlowVerify = async (dataToVerify: ArrayBuffer, signatureToVerify: string) => {
     setIsProcessing(true);
     setProcessingAction('verify');
+    setVisualizationSteps([]);
 
     const steps = [
         { title: '1. Load Data, Public Key & Signature', explanation: 'Verification uses the public data, the signature, and the public key. The public key corresponds to the private key used for signing.' },
-        { title: '2. Hash Original Message (SHA-512)', explanation: 'Just like signing, the verifier re-calculates the SHA-512 hash of the original message. This must match the hash used during signing.' },
-        { title: '3. Verify Signature with Public Key', explanation: 'The core of verification. The algorithm uses the public key to perform a mathematical check on the signature against the data hash. This should confirm the private key\'s operation.' },
+        { title: '2. Hash Original Message (SHA-256)', explanation: 'Just like signing, the verifier re-calculates the SHA-256 hash of the original message. This must match the hash used during signing.' },
+        { title: '3. Verify Signature with Public Key', explanation: 'The core of verification. The algorithm uses the public key, the original hash, and the signature to perform a mathematical check using the RSA-PSS process.' },
         { title: '4. Compare and Validate', explanation: 'The result of the check is a simple boolean: valid or invalid. If valid, the signature is authentic and the data is untampered. If invalid, the signature or data cannot be trusted.' },
     ];
     
@@ -148,15 +157,15 @@ export function useEd25519() {
             if (i === 0) {
                 stepData = `Public key, data, and signature loaded.`;
             } else if (i === 1) {
-                const hashBuffer = await window.crypto.subtle.digest('SHA-512', dataToVerify);
+                const hashBuffer = await window.crypto.subtle.digest('SHA-256', dataToVerify);
                 stepData = `Message Hash: ${arrayBufferToBase64(hashBuffer).substring(0, 44)}...`;
             } else if (i === 2) {
                 stepData = `Verifying signature against hash using public key...`;
             } else {
-                const publicKeyBuffer = base64ToArrayBuffer(publicKey);
+                const publicKeyJwk = JSON.parse(publicKey);
                 const signatureBuffer = base64ToArrayBuffer(signatureToVerify);
-                const key = await window.crypto.subtle.importKey('spki', publicKeyBuffer, { name: 'Ed25519' }, true, ['verify']);
-                const isValid = await window.crypto.subtle.verify('Ed25519', key, signatureBuffer, dataToVerify);
+                const key = await window.crypto.subtle.importKey('jwk', publicKeyJwk, { name: 'RSA-PSS', hash: 'SHA-256' }, true, ['verify']);
+                const isValid = await window.crypto.subtle.verify({ name: 'RSA-PSS', saltLength: 32 }, key, signatureBuffer, dataToVerify);
                 stepData = `Verification Result: ${isValid ? 'VALID' : 'INVALID'}`;
                 if (isValid) {
                     toast.success("Signature is valid!");
@@ -184,22 +193,22 @@ export function useEd25519() {
     }
 
     let dataToSign: ArrayBuffer;
-    if (inputType === 'text') {
-      if (!textInput) {
+    if (signInputType === 'text') {
+      if (!signTextInput) {
         toast.error('Input message is required.');
         return;
       }
-      dataToSign = new TextEncoder().encode(textInput);
+      dataToSign = new TextEncoder().encode(signTextInput);
     } else {
-      if (!fileBuffer) {
-        toast.error('A file must be loaded first.');
+      if (!signFileBuffer) {
+        toast.error('A file must be loaded for signing.');
         return;
       }
-      dataToSign = fileBuffer;
+      dataToSign = signFileBuffer;
     }
-
+    
     if (showSteps) {
-        await runSlowSign(dataToSign);
+        runSlowSign(dataToSign);
         return;
     }
 
@@ -208,17 +217,27 @@ export function useEd25519() {
     setSignature('');
     try {
       await new Promise(res => setTimeout(res, 500)); // artifical delay
-      const privateKeyBuffer = base64ToArrayBuffer(privateKey);
-      const key = await window.crypto.subtle.importKey('pkcs8', privateKeyBuffer, { name: 'Ed25519' }, true, ['sign']);
-      const sig = await window.crypto.subtle.sign('Ed25519', key, dataToSign);
+      const privateKeyJwk = JSON.parse(privateKey);
+      const key = await window.crypto.subtle.importKey(
+        'jwk',
+        privateKeyJwk,
+        { name: 'RSA-PSS', hash: 'SHA-256' },
+        true,
+        ['sign']
+      );
+      const sig = await window.crypto.subtle.sign(
+        { name: 'RSA-PSS', saltLength: 32 },
+        key,
+        dataToSign
+      );
       setSignature(arrayBufferToBase64(sig));
       toast.success('Data signed successfully!');
     } catch (error) {
       toast.error('Signing failed. Ensure the private key is correct.');
       console.error(error);
     } finally {
-      setIsProcessing(false);
-      setProcessingAction(null);
+        setIsProcessing(false);
+        setProcessingAction(null);
     }
   };
 
@@ -233,18 +252,18 @@ export function useEd25519() {
     }
 
     let dataToVerify: ArrayBuffer;
-    if (inputType === 'text') {
-      if (!textInput) {
+    if (signInputType === 'text') {
+      if (!signTextInput) {
         toast.error('Input message is required.');
         return;
       }
-      dataToVerify = new TextEncoder().encode(textInput);
+      dataToVerify = new TextEncoder().encode(signTextInput);
     } else {
-      if (!fileBuffer) {
+      if (!signFileBuffer) {
         toast.error('A file must be loaded first.');
         return;
       }
-      dataToVerify = fileBuffer;
+      dataToVerify = signFileBuffer;
     }
 
     if (showSteps) {
@@ -255,11 +274,11 @@ export function useEd25519() {
     setIsProcessing(true);
     setProcessingAction('verify');
     try {
-      await new Promise(res => setTimeout(res, 500)); // artifical delay
-      const publicKeyBuffer = base64ToArrayBuffer(publicKey);
+      await new Promise(res => setTimeout(res, 500)); // artificial delay
+      const publicKeyJwk = JSON.parse(publicKey);
       const signatureBuffer = base64ToArrayBuffer(signature);
-      const key = await window.crypto.subtle.importKey('spki', publicKeyBuffer, { name: 'Ed25519' }, true, ['verify']);
-      const isValid = await window.crypto.subtle.verify('Ed25519', key, signatureBuffer, dataToVerify);
+      const key = await window.crypto.subtle.importKey('jwk', publicKeyJwk, { name: 'RSA-PSS', hash: 'SHA-256' }, true, ['verify']);
+      const isValid = await window.crypto.subtle.verify({ name: 'RSA-PSS', saltLength: 32 }, key, signatureBuffer, dataToVerify);
       if (isValid) {
         toast.success('Signature is valid!');
       } else {
@@ -279,39 +298,41 @@ export function useEd25519() {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard!');
   };
-  
-  const handleDownload = (content: string, fileName: string) => {
-    if (!content) return;
-    const blob = new Blob([content], { type: 'text/plain' });
+
+  const handleDownloadSignature = () => {
+    if (!signature) {
+        toast.error('Nothing to download.');
+        return;
+    }
+    const blob = new Blob([signature], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileName;
+    a.download = 'signature.txt';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success(`Downloaded as ${fileName}`);
+    toast.success('Signature download started.');
   };
-  
+
   return {
     publicKey, setPublicKey,
     privateKey, setPrivateKey,
-    inputType, setInputType,
-    textInput, setTextInput,
-    file, setFile,
-    fileBuffer,
+    signInputType, setSignInputType,
+    signTextInput, setSignTextInput,
+    signFile,
     signature, setSignature,
     isProcessing,
+    processingAction,
     animatedSignature,
     showSteps, setShowSteps,
     visualizationSteps,
     handleGenerateKeys,
-    handleFileChange,
+    handleSignFileChange,
     handleSign,
-    handleCopy,
     handleVerify,
-    processingAction,
-    handleDownload,
-  }
+    handleCopy,
+    handleDownloadSignature,
+  };
 }
