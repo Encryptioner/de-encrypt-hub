@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -7,7 +6,7 @@ import { toast } from 'sonner';
 import { Copy, Key, FileText, File as FileIcon, Download, Loader2 } from 'lucide-react';
 import { Input } from './ui/input';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { arrayBufferToBase64 } from '@/lib/utils';
+import { arrayBufferToBase64, base64ToArrayBuffer } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from './ui/switch';
 import { CipherVisualization } from './CipherVisualization';
@@ -26,12 +25,13 @@ export function RsaTool() {
   const [signFileBuffer, setSignFileBuffer] = React.useState<ArrayBuffer | null>(null);
   const [signature, setSignature] = React.useState('');
   const [isProcessing, setIsProcessing] = React.useState(false);
+  const [processingAction, setProcessingAction] = React.useState<'sign' | 'verify' | null>(null);
   const [animatedSignature, setAnimatedSignature] = React.useState('');
   const [showSteps, setShowSteps] = React.useState(false);
   const [visualizationSteps, setVisualizationSteps] = React.useState<VisualizationStep[]>([]);
 
   React.useEffect(() => {
-    if (isProcessing && !showSteps) {
+    if (isProcessing && processingAction === 'sign' && !showSteps) {
       const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
       const interval = setInterval(() => {
         let result = '';
@@ -43,7 +43,7 @@ export function RsaTool() {
 
       return () => clearInterval(interval);
     }
-  }, [isProcessing, showSteps]);
+  }, [isProcessing, showSteps, processingAction]);
 
   const handleGenerateKeys = async () => {
     try {
@@ -95,8 +95,8 @@ export function RsaTool() {
 
   const runSlowSign = async (dataToSign: ArrayBuffer) => {
     setIsProcessing(true);
+    setProcessingAction('sign');
     setSignature('');
-    setVisualizationSteps([]);
 
     const steps = [
         { title: '1. Hash Data (SHA-256)', explanation: 'First, the input data is processed by the SHA-256 hash function. This creates a unique, fixed-size "fingerprint" of the data. Any change to the original data, no matter how small, will result in a completely different hash.' },
@@ -138,6 +138,61 @@ export function RsaTool() {
         toast.error('Signing failed. Ensure the private key is correct.');
     } finally {
         setIsProcessing(false);
+        setProcessingAction(null);
+    }
+  };
+
+  const runSlowVerify = async (dataToVerify: ArrayBuffer, signatureToVerify: string) => {
+    setIsProcessing(true);
+    setProcessingAction('verify');
+    setVisualizationSteps([]);
+
+    const steps = [
+        { title: '1. Load Data, Public Key & Signature', explanation: 'Verification uses the public data, the signature, and the public key. The public key corresponds to the private key used for signing.' },
+        { title: '2. Hash Original Message (SHA-256)', explanation: 'Just like signing, the verifier re-calculates the SHA-256 hash of the original message. This must match the hash used during signing.' },
+        { title: '3. Verify Signature with Public Key', explanation: 'The core of verification. The algorithm uses the public key, the original hash, and the signature to perform a mathematical check using the RSA-PSS process.' },
+        { title: '4. Compare and Validate', explanation: 'The result of the check is a simple boolean: valid or invalid. If valid, the signature is authentic and the data is untampered. If invalid, the signature or data cannot be trusted.' },
+    ];
+    
+    const initialSteps: VisualizationStep[] = steps.map(s => ({ ...s, data: '', status: 'pending' }));
+    setVisualizationSteps(initialSteps);
+    
+    try {
+        for (let i = 0; i < initialSteps.length; i++) {
+            await new Promise(res => setTimeout(res, 100));
+            setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'processing', data: '...' } : s)));
+            await new Promise(res => setTimeout(res, 800));
+
+            let stepData = '';
+            if (i === 0) {
+                stepData = `Public key, data, and signature loaded.`;
+            } else if (i === 1) {
+                const hashBuffer = await window.crypto.subtle.digest('SHA-256', dataToVerify);
+                stepData = `Message Hash: ${arrayBufferToBase64(hashBuffer).substring(0, 44)}...`;
+            } else if (i === 2) {
+                stepData = `Verifying signature against hash using public key...`;
+            } else {
+                const publicKeyJwk = JSON.parse(publicKey);
+                const signatureBuffer = base64ToArrayBuffer(signatureToVerify);
+                const key = await window.crypto.subtle.importKey('jwk', publicKeyJwk, { name: 'RSA-PSS', hash: 'SHA-256' }, true, ['verify']);
+                const isValid = await window.crypto.subtle.verify({ name: 'RSA-PSS', saltLength: 32 }, key, signatureBuffer, dataToVerify);
+                stepData = `Verification Result: ${isValid ? 'VALID' : 'INVALID'}`;
+                if (isValid) {
+                    toast.success("Signature is valid!");
+                } else {
+                    toast.error("Signature is INVALID!");
+                }
+            }
+            
+            setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
+        }
+        toast.info("Verification visualization complete!");
+    } catch (e: any) {
+        toast.error('Verification failed. Ensure the public key and signature are correct.');
+        setVisualizationSteps(prev => prev.map(s => s.status === 'processing' ? {...s, status: 'done', data: 'Error!'} : s));
+    } finally {
+        setIsProcessing(false);
+        setProcessingAction(null);
     }
   };
 
@@ -168,6 +223,7 @@ export function RsaTool() {
     }
 
     setIsProcessing(true);
+    setProcessingAction('sign');
     setSignature('');
     try {
       await new Promise(res => setTimeout(res, 500)); // artifical delay
@@ -191,6 +247,59 @@ export function RsaTool() {
       console.error(error);
     } finally {
         setIsProcessing(false);
+        setProcessingAction(null);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!publicKey) {
+      toast.error('Public key is required to verify.');
+      return;
+    }
+    if (!signature) {
+      toast.error('Signature is required to verify.');
+      return;
+    }
+
+    let dataToVerify: ArrayBuffer;
+    if (signInputType === 'text') {
+      if (!signTextInput) {
+        toast.error('Input message is required.');
+        return;
+      }
+      dataToVerify = new TextEncoder().encode(signTextInput);
+    } else {
+      if (!signFileBuffer) {
+        toast.error('A file must be loaded first.');
+        return;
+      }
+      dataToVerify = signFileBuffer;
+    }
+
+    if (showSteps) {
+        await runSlowVerify(dataToVerify, signature);
+        return;
+    }
+
+    setIsProcessing(true);
+    setProcessingAction('verify');
+    try {
+      await new Promise(res => setTimeout(res, 500)); // artificial delay
+      const publicKeyJwk = JSON.parse(publicKey);
+      const signatureBuffer = base64ToArrayBuffer(signature);
+      const key = await window.crypto.subtle.importKey('jwk', publicKeyJwk, { name: 'RSA-PSS', hash: 'SHA-256' }, true, ['verify']);
+      const isValid = await window.crypto.subtle.verify({ name: 'RSA-PSS', saltLength: 32 }, key, signatureBuffer, dataToVerify);
+      if (isValid) {
+        toast.success('Signature is valid!');
+      } else {
+        toast.error('Signature is INVALID!');
+      }
+    } catch (error) {
+      toast.error('Verification failed. Check public key or signature format.');
+      console.error(error);
+    } finally {
+      setIsProcessing(false);
+      setProcessingAction(null);
     }
   };
 
@@ -247,7 +356,7 @@ export function RsaTool() {
         <Card>
             <CardHeader>
                 <CardTitle>Digital Signature (RSA-PSS)</CardTitle>
-                <CardDescription>Sign data with your private key to prove authenticity.</CardDescription>
+                <CardDescription>Sign data with your private key to prove authenticity and verify with the public key.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="grid gap-2">
@@ -294,10 +403,16 @@ export function RsaTool() {
                     <Label htmlFor="rsa-slow-mode">Show Step-by-Step Visualization</Label>
                 </div>
                 
-                <Button onClick={handleSign} className="w-full" disabled={isProcessing || !privateKey}>
-                    {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isProcessing ? 'Signing...' : 'Sign with Private Key'}
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button onClick={handleSign} className="flex-1" disabled={isProcessing || !privateKey}>
+                    {isProcessing && processingAction === 'sign' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isProcessing && processingAction === 'sign' ? 'Signing...' : 'Sign with Private Key'}
+                  </Button>
+                  <Button onClick={handleVerify} variant="secondary" className="flex-1" disabled={isProcessing || !publicKey || !signature}>
+                    {isProcessing && processingAction === 'verify' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isProcessing && processingAction === 'verify' ? 'Verifying...' : 'Verify with Public Key'}
+                  </Button>
+                </div>
 
                 {showSteps && visualizationSteps.length > 0 && (
                   <div className="pt-4 border-t">
@@ -308,24 +423,29 @@ export function RsaTool() {
                   </div>
                 )}
 
-                {(signature || (isProcessing && !showSteps)) && (
-                    <div className="grid gap-2 pt-4 border-t">
-                        <div className="flex justify-between items-center">
-                            <Label htmlFor="rsa-signature">Generated Signature (Base64)</Label>
-                            <div>
-                                <Button variant="ghost" size="icon" onClick={handleDownloadSignature} title="Download Signature" disabled={isProcessing}>
-                                    <Download className="w-4 h-4" />
-                                    <span className="sr-only">Download</span>
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard" disabled={isProcessing}>
-                                    <Copy className="w-4 h-4" />
-                                    <span className="sr-only">Copy</span>
-                                </Button>
-                            </div>
+                <div className="grid gap-2 pt-4 border-t">
+                    <div className="flex justify-between items-center">
+                        <Label htmlFor="rsa-signature">Signature (Base64)</Label>
+                        <div>
+                            <Button variant="ghost" size="icon" onClick={handleDownloadSignature} title="Download Signature" disabled={!signature}>
+                                <Download className="w-4 h-4" />
+                                <span className="sr-only">Download</span>
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleCopy(signature)} title="Copy to Clipboard" disabled={!signature}>
+                                <Copy className="w-4 h-4" />
+                                <span className="sr-only">Copy</span>
+                            </Button>
                         </div>
-                        <Textarea id="rsa-signature" readOnly value={isProcessing && !showSteps ? animatedSignature : signature} className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs" />
                     </div>
-                )}
+                    <Textarea
+                      id="rsa-signature"
+                      placeholder="Paste a signature to verify, or see the generated one here."
+                      value={(isProcessing && processingAction === 'sign' && !showSteps) ? animatedSignature : signature}
+                      onChange={(e) => setSignature(e.target.value)}
+                      className="min-h-[80px] resize-y bg-muted/50 font-mono text-xs"
+                      disabled={isProcessing}
+                    />
+                </div>
             </CardContent>
         </Card>
       </div>
