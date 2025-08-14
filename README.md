@@ -1,4 +1,15 @@
-# Welcome to your Lovable project
+# Welcome to De-Encrypt Hub (Lovable project)
+- Secure, Private, Browser-Based Encryption & Decryption
+
+## Tech Stack
+- Environment `Node@^22`
+- Frontend Framework
+    - `react@^18.3.1`
+    - `tailwindcss@^3.4.11`
+- Dev tools 
+    - `pnpm@^10.13.1`
+    - `vite@^5.4.1`
+    - `typescript@^5.5.3`
 
 ## Project info
 
@@ -30,10 +41,10 @@ git clone <YOUR_GIT_URL>
 cd <YOUR_PROJECT_NAME>
 
 # Step 3: Install the necessary dependencies.
-npm i
+pnpm i
 
 # Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+pnpm run dev
 ```
 
 **Edit a file directly in GitHub**
