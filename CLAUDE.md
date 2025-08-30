@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 De-encrypt Hub is a browser-based encryption and decryption toolkit built with React, TypeScript, and Vite. It provides secure, client-side cryptographic operations including symmetric/asymmetric encryption, hashing, digital signatures, and image encryption.
 
+**Live Demo**: [https://encryptioner.github.io/de-encrypt-hub/](https://encryptioner.github.io/de-encrypt-hub/)
+
 ## Development Commands
 
 ```bash
@@ -71,6 +73,15 @@ pnpm run preview
 - **Build Target**: ES2020 with modern browser support
 - **Port**: Development server runs on port 8080
 - **Package Manager**: Uses pnpm (lockfile: pnpm-lock.yaml)
+- **Base Path**: Production builds use `/de-encrypt-hub/` for GitHub Pages compatibility
+
+### Deployment
+
+- **Platform**: GitHub Pages
+- **Workflow**: `.github/workflows/deploy.yml`
+- **Trigger**: Automatic deployment on push to `main` branch
+- **Build Output**: `dist/` directory
+- **Live URL**: [https://encryptioner.github.io/de-encrypt-hub/](https://encryptioner.github.io/de-encrypt-hub/)
 
 ### Security Considerations
 

@@ -1,6 +1,8 @@
 # Welcome to De-Encrypt Hub
 - Secure, Private, Browser-Based Encryption & Decryption
 
+🌐 **Live Demo**: [https://encryptioner.github.io/de-encrypt-hub/](https://encryptioner.github.io/de-encrypt-hub/)
+
 ## Tech Stack
 - Environment `Node@^22`
 - Frontend Framework
@@ -59,6 +61,27 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## 🚀 Deployment
+
+The application is automatically deployed to GitHub Pages using GitHub Actions:
+
+- **Live URL**: [https://encryptioner.github.io/de-encrypt-hub/](https://encryptioner.github.io/de-encrypt-hub/)
+- **Deployment**: Automatic on push to `main` branch
+- **Build Process**: `pnpm run build` generates optimized production build
+- **Hosting**: GitHub Pages with custom domain support
+
+### Manual Deployment
+
+```sh
+# Build for production
+pnpm run build
+
+# Preview production build locally
+pnpm run preview
+```
+
+The build output is generated in the `dist/` directory and automatically deployed via GitHub Actions.
+
 ## 👨‍💻 Author
 1. Name: Ankur Mursalin
 2. Email: mir.ankur.ruet13@gmail.com
@@ -68,4 +91,4 @@ This project is built with:
 6. Twitter: [https://x.com/AnkurMursalin](https://x.com/AnkurMursalin)
 7. Blog: [https://dev.to/mir_mursalin_ankur](https://dev.to/mir_mursalin_ankur)
 8. Nerddevs: [https://nerddevs.com/author/ankur/](https://nerddevs.com/author/ankur/)
-9. Project Home Page: [https://encryptioner.github.io/linkedinify](https://encryptioner.github.io/linkedinify)
+9. Project Home Page: [https://encryptioner.github.io/de-encrypt-hub](https://encryptioner.github.io/de-encrypt-hub)

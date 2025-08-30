@@ -3,6 +3,18 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "Secure, private, browser-based encryption and decryption toolkit with support for symmetric/asymmetric encryption, hashing, digital signatures, and image encryption.",
+  "homepage": "https://encryptioner.github.io/de-encrypt-hub/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/encryptioner/de-encrypt-hub.git"
+  },
+  "author": {
+    "name": "Ankur Mursalin",
+    "email": "mir.ankur.ruet13@gmail.com",
+    "url": "https://encryptioner.github.io/"
+  },
+  "keywords": ["encryption", "decryption", "cryptography", "security", "react", "typescript", "vite", "browser-based", "client-side"],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
