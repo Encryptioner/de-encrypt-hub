@@ -1,3 +1,10 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Environment Configuration
+.env
+.env.*
+
+
 # Logs
 logs
 *.log
@@ -13,8 +20,6 @@ dist-ssr
 *.local
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
 .idea
 .DS_Store
 *.suo
@@ -22,3 +27,21 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude
+.claude/*
+!.claude/*.example*
+
+# Cursor
+.cursor/*
+.cursorignore
+!.cursor/*.example*
+
+# Ignore multi-commit automation files (.ft Copilot)
+auto_commit_changes.sh
+auto_commit_plan.json
+auto_commit_prompt.md
+
+# VS Code
+.vscode/*
+!.vscode/*.example.json

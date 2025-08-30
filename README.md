@@ -1,5 +1,7 @@
-# Welcome to De-Encrypt Hub (Lovable project)
+# Welcome to De-Encrypt Hub
 - Secure, Private, Browser-Based Encryption & Decryption
+
+🌐 **Live Demo**: [https://encryptioner.github.io/de-encrypt-hub/](https://encryptioner.github.io/de-encrypt-hub/)
 
 ## Tech Stack
 - Environment `Node@^22`
@@ -11,23 +13,11 @@
     - `vite@^5.4.1`
     - `typescript@^5.5.3`
 
-## Project info
-
-**URL**: https://lovable.dev/projects/0698fa3c-f463-4de4-9c1e-fc2a0d6e02c8
-
 ## How can I edit this code?
 
-There are several ways of editing your application.
+**Edit from your IDE**
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/0698fa3c-f463-4de4-9c1e-fc2a0d6e02c8) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+You can clone this repo in your device and push changes.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -71,14 +61,34 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## 🚀 Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/0698fa3c-f463-4de4-9c1e-fc2a0d6e02c8) and click on Share -> Publish.
+The application is automatically deployed to GitHub Pages using GitHub Actions:
 
-## Can I connect a custom domain to my Lovable project?
+- **Live URL**: [https://encryptioner.github.io/de-encrypt-hub/](https://encryptioner.github.io/de-encrypt-hub/)
+- **Deployment**: Automatic on push to `main` branch
+- **Build Process**: `pnpm run build` generates optimized production build
+- **Hosting**: GitHub Pages with custom domain support
 
-Yes, you can!
+### Manual Deployment
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```sh
+# Build for production
+pnpm run build
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+# Preview production build locally
+pnpm run preview
+```
+
+The build output is generated in the `dist/` directory and automatically deployed via GitHub Actions.
+
+## 👨‍💻 Author
+1. Name: Ankur Mursalin
+2. Email: mir.ankur.ruet13@gmail.com
+3. Website: [https://encryptioner.github.io/](https://encryptioner.github.io/)
+4. LinkedIn: [https://www.linkedin.com/in/mir-mursalin-ankur](https://www.linkedin.com/in/mir-mursalin-ankur)
+5. Github: [https://github.com/encryptioner](https://github.com/encryptioner)
+6. Twitter: [https://x.com/AnkurMursalin](https://x.com/AnkurMursalin)
+7. Blog: [https://dev.to/mir_mursalin_ankur](https://dev.to/mir_mursalin_ankur)
+8. Nerddevs: [https://nerddevs.com/author/ankur/](https://nerddevs.com/author/ankur/)
+9. Project Home Page: [https://encryptioner.github.io/de-encrypt-hub](https://encryptioner.github.io/de-encrypt-hub)

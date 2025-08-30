@@ -2,7 +2,7 @@
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { DeencryptHub } from "@/components/DeencryptHub";
 import content from "@/config/content.json";
-import { Github } from "lucide-react";
+import { Github, Linkedin, Twitter, Globe, Mail } from "lucide-react";
 import { HeroSection } from "@/components/HeroSection";
 import { InfoAccordion } from "@/components/InfoAccordion";
 import { ColorfulLockIcon } from "@/components/ColorfulLockIcon";
@@ -29,13 +29,27 @@ const Index = () => {
       </main>
       <footer className="w-full max-w-2xl mx-auto text-center py-8">
         <p className="text-sm text-muted-foreground">{content.subtitle}</p>
-        <div className="text-xs text-muted-foreground mt-4 space-y-1">
-          <p>
-            Developed by <a href="https://encryptioner.github.io/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Ankur Mursalin</a>.
+        <div className="mt-4 space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Developed by <a href="https://encryptioner.github.io/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Ankur Mursalin</a>
           </p>
-          <p>
-            Copyright © {new Date().getFullYear()}. All rights reserved.
-          </p>
+          <div className="flex justify-center items-center gap-4">
+            <a href="https://github.com/encryptioner" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Github className="h-5 w-5" />
+            </a>
+            <a href="https://www.linkedin.com/in/mir-mursalin-ankur" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Linkedin className="h-5 w-5" />
+            </a>
+            <a href="https://x.com/AnkurMursalin" target="_blank" rel="noopener noreferrer" aria-label="Twitter" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Twitter className="h-5 w-5" />
+            </a>
+            <a href="https://encryptioner.github.io/" target="_blank" rel="noopener noreferrer" aria-label="Website" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Globe className="h-5 w-5" />
+            </a>
+            <a href="mailto:mir.ankur.ruet13@gmail.com" aria-label="Email" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Mail className="h-5 w-5" />
+            </a>
+          </div>
         </div>
       </footer>
     </div>
