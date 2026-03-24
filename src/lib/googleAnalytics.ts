@@ -13,7 +13,7 @@ export const GOOGLE_ANALYTICS_CONFIG = {
    * Your Google Analytics 4 Measurement ID
    * Get it from: https://analytics.google.com/ > Admin > Data Streams
    */
-  measurementId: 'G-XXXXXXXXXX', // Replace with your GA4 Measurement ID
+  measurementId: 'G-Z629QFCJ9Z', // Replace with your GA4 Measurement ID
 
   /**
    * Enable/disable Google Analytics
@@ -32,7 +32,7 @@ export const GOOGLE_ANALYTICS_CONFIG = {
    */
   get shouldTrack(): boolean {
     if (!this.enabled) return false;
-    if (!this.measurementId || this.measurementId === 'G-XXXXXXXXXX') return false;
+    if (!this.measurementId || this.measurementId === 'G-Z629QFCJ9Z') return false;
 
     const isProduction = import.meta.env.MODE === 'production';
     if (!isProduction && !this.trackInDevelopment) return false;

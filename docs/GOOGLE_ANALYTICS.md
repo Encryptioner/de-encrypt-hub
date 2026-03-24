@@ -8,7 +8,7 @@ Quick setup guide for Google Analytics 4 in De-encrypt Hub.
 
 1. Visit [analytics.google.com](https://analytics.google.com/)
 2. Admin → Data Streams → Your Stream
-3. Copy your Measurement ID (G-XXXXXXXXXX)
+3. Copy your Measurement ID (G-Z629QFCJ9Z)
 
 ### 2. Configure
 
@@ -33,7 +33,7 @@ pnpm build
 
 Check browser console for:
 ```
-[Google Analytics] Initialized successfully with ID: G-XXXXXXXXXX
+[Google Analytics] Initialized successfully with ID: G-Z629QFCJ9Z
 ```
 
 ## Tracked Events
