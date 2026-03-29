@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { hash, HashAlgorithm } from '@/lib/crypto';
 import { type VisualizationStep } from '@/hooks/useCipher';
 import { arrayBufferToBase64 } from '@/lib/utils';
+import { trackEvent, sanitizeError, toHashAlgorithmParam } from '@/lib/googleAnalytics';
 
 export function useHash() {
   const [input, setInput] = useState('This is a test message.');
@@ -71,6 +72,7 @@ export function useHash() {
 
     setIsProcessing(false);
     toast.success("Hashing visualization complete!");
+    trackEvent({ name: "hash_generated", params: { algorithm: toHashAlgorithmParam(algorithm) } });
   };
 
   const handleHash = async () => {
@@ -91,9 +93,11 @@ export function useHash() {
       const result = await hash(input, algorithm);
       setOutput(result);
       toast.success('Hashed successfully!');
-    } catch (error: any) {
-      toast.error(error.message || 'Hashing failed.');
+      trackEvent({ name: "hash_generated", params: { algorithm: toHashAlgorithmParam(algorithm) } });
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Hashing failed.');
       setOutput('');
+      trackEvent({ name: "hash_failed", params: { algorithm: toHashAlgorithmParam(algorithm), error: sanitizeError(error) } });
     } finally {
       setIsProcessing(false);
     }
@@ -106,6 +110,7 @@ export function useHash() {
     }
     navigator.clipboard.writeText(output);
     toast.success('Result copied to clipboard!');
+    trackEvent({ name: "result_copied", params: { tool: "hash" } });
   };
 
   return {

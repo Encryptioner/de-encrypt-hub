@@ -2,6 +2,7 @@ import { toast } from 'sonner';
 import { encrypt, decrypt, type Algorithm } from '@/lib/crypto';
 import content from '@/config/content.json';
 import type { VisualizationStep } from './cipher-types';
+import { trackEvent, sanitizeError, toCipherAlgorithmParam } from '@/lib/googleAnalytics';
 
 interface UseCipherProcessorProps {
     mode: 'encrypt' | 'decrypt';
@@ -67,9 +68,11 @@ export function useCipherProcessor({
             setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
             }
             toast.success('AES encryption complete!');
-        } catch (e: any) {
-            toast.error(e.message || 'Encryption failed.');
+            trackEvent({ name: "cipher_used", params: { algorithm: toCipherAlgorithmParam(algorithm), mode: "encrypt" } });
+        } catch (e: unknown) {
+            toast.error(e instanceof Error ? e.message : 'Encryption failed.');
             setVisualizationSteps(prev => prev.map(s => s.status === 'processing' ? {...s, status: 'done', data: 'Error!'} : s));
+            trackEvent({ name: "cipher_failed", params: { algorithm: toCipherAlgorithmParam(algorithm), mode: "encrypt", error: sanitizeError(e) } });
         } finally {
             setIsProcessing(false);
         }
@@ -81,13 +84,13 @@ export function useCipherProcessor({
             { title: '3. Generate Ciphertext', explanation: 'The final output is the encrypted ciphertext.', data: '', status: 'pending' },
         ];
         setVisualizationSteps(steps);
-        
+
         try {
             await new Promise(res => setTimeout(res, 100));
             setVisualizationSteps(prev => prev.map((s, idx) => (idx === 0 ? { ...s, status: 'processing', data: `Input: "${input.substring(0, 48)}..."` } : s)));
             await new Promise(res => setTimeout(res, 800));
             setVisualizationSteps(prev => prev.map((s, idx) => (idx === 0 ? { ...s, status: 'done' } : s)));
-            
+
             await new Promise(res => setTimeout(res, 100));
             setVisualizationSteps(prev => prev.map((s, idx) => (idx === 1 ? { ...s, status: 'processing', data: 'Processing...' } : s)));
             await new Promise(res => setTimeout(res, 800));
@@ -99,11 +102,13 @@ export function useCipherProcessor({
             await new Promise(res => setTimeout(res, 800));
             setVisualizationSteps(prev => prev.map((s, idx) => (idx === 2 ? { ...s, status: 'done', data: finalResult } : s)));
             setOutput(finalResult);
-            
+
             toast.success(`${algoName} encryption complete!`);
-        } catch (e: any) {
-            toast.error(e.message || 'Encryption failed.');
+            trackEvent({ name: "cipher_used", params: { algorithm: toCipherAlgorithmParam(algorithm), mode: "encrypt" } });
+        } catch (e: unknown) {
+            toast.error(e instanceof Error ? e.message : 'Encryption failed.');
             setVisualizationSteps(prev => prev.map(s => s.status === 'processing' ? {...s, status: 'done', data: 'Error!'} : s));
+            trackEvent({ name: "cipher_failed", params: { algorithm: toCipherAlgorithmParam(algorithm), mode: "encrypt", error: sanitizeError(e) } });
         } finally {
             setIsProcessing(false);
         }
@@ -152,9 +157,11 @@ export function useCipherProcessor({
             setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
             }
             toast.success('AES decryption complete!');
-        } catch (e: any) {
-            toast.error(e.message || 'Decryption failed.');
+            trackEvent({ name: "cipher_used", params: { algorithm: toCipherAlgorithmParam(algorithm), mode: "decrypt" } });
+        } catch (e: unknown) {
+            toast.error(e instanceof Error ? e.message : 'Decryption failed.');
             setVisualizationSteps(prev => prev.map(s => s.status === 'processing' ? {...s, status: 'done', data: 'Error!'} : s));
+            trackEvent({ name: "cipher_failed", params: { algorithm: toCipherAlgorithmParam(algorithm), mode: "decrypt", error: sanitizeError(e) } });
         } finally {
             setIsProcessing(false);
         }
@@ -184,9 +191,11 @@ export function useCipherProcessor({
                 setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
             }
             toast.success(`${algoName} decryption complete!`);
-        } catch (e: any) {
-            toast.error(e.message || 'Decryption failed.');
+            trackEvent({ name: "cipher_used", params: { algorithm: toCipherAlgorithmParam(algorithm), mode: "decrypt" } });
+        } catch (e: unknown) {
+            toast.error(e instanceof Error ? e.message : 'Decryption failed.');
             setVisualizationSteps(prev => prev.map(s => s.status === 'processing' ? {...s, status: 'done', data: 'Error!'} : s));
+            trackEvent({ name: "cipher_failed", params: { algorithm: toCipherAlgorithmParam(algorithm), mode: "decrypt", error: sanitizeError(e) } });
         } finally {
             setIsProcessing(false);
         }
@@ -211,9 +220,11 @@ export function useCipherProcessor({
         const result = encrypt(input, key, algorithm);
         setOutput(result);
         toast.success('Encrypted successfully!');
-        } catch (error: any) {
-        toast.error(error.message || 'Encryption failed.');
+        trackEvent({ name: "cipher_used", params: { algorithm: toCipherAlgorithmParam(algorithm), mode: "encrypt" } });
+        } catch (error: unknown) {
+        toast.error(error instanceof Error ? error.message : 'Encryption failed.');
         setOutput('');
+        trackEvent({ name: "cipher_failed", params: { algorithm: toCipherAlgorithmParam(algorithm), mode: "encrypt", error: sanitizeError(error) } });
         } finally {
         setIsProcessing(false);
         }
@@ -237,9 +248,11 @@ export function useCipherProcessor({
         const result = decrypt(input, key, algorithm);
         setOutput(result);
         toast.success('Decrypted successfully!');
-        } catch (error: any) {
-        toast.error(error.message || 'Decryption failed.');
+        trackEvent({ name: "cipher_used", params: { algorithm: toCipherAlgorithmParam(algorithm), mode: "decrypt" } });
+        } catch (error: unknown) {
+        toast.error(error instanceof Error ? error.message : 'Decryption failed.');
         setOutput('');
+        trackEvent({ name: "cipher_failed", params: { algorithm: toCipherAlgorithmParam(algorithm), mode: "decrypt", error: sanitizeError(error) } });
         } finally {
         setIsProcessing(false);
         }

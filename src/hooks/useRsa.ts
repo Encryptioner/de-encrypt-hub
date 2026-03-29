@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { type VisualizationStep } from '@/hooks/useCipher';
 import { arrayBufferToBase64, base64ToArrayBuffer } from '@/lib/utils';
+import { trackEvent, sanitizeError } from '@/lib/googleAnalytics';
 
 export function useRsa() {
     // Key State
@@ -37,9 +38,12 @@ export function useRsa() {
             setPublicKey(JSON.stringify(publicKeyJwk, null, 2));
             setPrivateKey(JSON.stringify(privateKeyJwk, null, 2));
             toast.success('RSA key pair generated successfully!');
+            trackEvent({ name: "rsa_key_generated", params: { key_size: 2048 } });
         } catch (error) {
             toast.error('Failed to generate keys.');
             console.error(error);
+            const msg = error instanceof Error ? error.message : 'Key generation failed.';
+            trackEvent({ name: "rsa_failed", params: { operation: "keygen", error: sanitizeError(msg) } });
         }
     };
 
@@ -92,10 +96,11 @@ export function useRsa() {
                         stepData = new TextDecoder().decode(decrypted);
                         setOutput(stepData);
                     }
-                } catch (e: any) {
-                    stepData = `Error: ${e.message}`;
+                } catch (e: unknown) {
+                    const errMsg = e instanceof Error ? e.message : 'Operation failed.';
+                    stepData = `Error: ${errMsg}`;
                     setOutput(stepData);
-                    toast.error(`Operation failed: ${e.message}`);
+                    toast.error(`Operation failed: ${errMsg}`);
                 }
             }
             setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
@@ -122,8 +127,10 @@ export function useRsa() {
             const result = arrayBufferToBase64(encrypted);
             setOutput(result);
             toast.success('Encryption successful!');
-        } catch (e: any) {
-            toast.error(`Encryption failed: ${e.message}`);
+            trackEvent({ name: "rsa_operation", params: { operation: "encrypt" } });
+        } catch (e: unknown) {
+            toast.error(`Encryption failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+            trackEvent({ name: "rsa_failed", params: { operation: "encrypt", error: sanitizeError(e) } });
         } finally {
             setIsProcessing(false);
         }
@@ -147,8 +154,10 @@ export function useRsa() {
             const result = new TextDecoder().decode(decrypted);
             setOutput(result);
             toast.success('Decryption successful!');
-        } catch (e: any) {
-            toast.error(`Decryption failed: ${e.message}`);
+            trackEvent({ name: "rsa_operation", params: { operation: "decrypt" } });
+        } catch (e: unknown) {
+            toast.error(`Decryption failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+            trackEvent({ name: "rsa_failed", params: { operation: "decrypt", error: sanitizeError(e) } });
         } finally {
             setIsProcessing(false);
         }
@@ -158,6 +167,7 @@ export function useRsa() {
         if (!text) return toast.error('Nothing to copy.');
         navigator.clipboard.writeText(text);
         toast.success('Copied to clipboard!');
+        trackEvent({ name: "result_copied", params: { tool: "rsa" } });
     };
 
     const handleSwap = () => {
