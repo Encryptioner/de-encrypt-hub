@@ -2,6 +2,7 @@ import * as React from 'react';
 import { toast } from 'sonner';
 import { type VisualizationStep } from '@/hooks/useCipher';
 import { arrayBufferToBase64, base64ToArrayBuffer } from '@/lib/utils';
+import { trackEvent, sanitizeError } from '@/lib/googleAnalytics';
 
 export function useEd25519() {
   const [publicKey, setPublicKey] = React.useState('');
@@ -116,7 +117,7 @@ export function useEd25519() {
             setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
         }
         toast.success("Signing visualization complete!");
-    } catch (e: any) {
+    } catch (e: unknown) {
         toast.error('Signing failed. Ensure the private key is correct.');
     } finally {
         setIsProcessing(false);
@@ -168,7 +169,7 @@ export function useEd25519() {
             setVisualizationSteps(prev => prev.map((s, idx) => (idx === i ? { ...s, status: 'done', data: stepData } : s)));
         }
         toast.info("Verification visualization complete!");
-    } catch (e: any) {
+    } catch (e: unknown) {
         toast.error('Verification failed. Ensure the public key and signature are correct.');
         setVisualizationSteps(prev => prev.map(s => s.status === 'processing' ? {...s, status: 'done', data: 'Error!'} : s));
     } finally {
@@ -213,9 +214,11 @@ export function useEd25519() {
       const sig = await window.crypto.subtle.sign('Ed25519', key, dataToSign);
       setSignature(arrayBufferToBase64(sig));
       toast.success('Data signed successfully!');
+      trackEvent({ name: "signature_operation", params: { algorithm: "ed25519", operation: "sign" } });
     } catch (error) {
       toast.error('Signing failed. Ensure the private key is correct.');
       console.error(error);
+      trackEvent({ name: "signature_failed", params: { algorithm: "ed25519", operation: "sign", error: sanitizeError(error) } });
     } finally {
       setIsProcessing(false);
       setProcessingAction(null);
@@ -265,9 +268,11 @@ export function useEd25519() {
       } else {
         toast.error('Signature is INVALID!');
       }
+      trackEvent({ name: "signature_operation", params: { algorithm: "ed25519", operation: "verify" } });
     } catch (error) {
       toast.error('Verification failed. Check public key or signature format.');
       console.error(error);
+      trackEvent({ name: "signature_failed", params: { algorithm: "ed25519", operation: "verify", error: sanitizeError(error) } });
     } finally {
       setIsProcessing(false);
       setProcessingAction(null);
@@ -278,6 +283,7 @@ export function useEd25519() {
     if (!text) return;
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard!');
+    trackEvent({ name: "result_copied", params: { tool: "signature" } });
   };
   
   const handleDownload = (content: string, fileName: string) => {

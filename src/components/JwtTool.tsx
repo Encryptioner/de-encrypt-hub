@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 import { EncryptJWT, jwtDecrypt } from 'jose';
+import { trackEvent, sanitizeError } from '@/lib/googleAnalytics';
 import { Copy, RefreshCw, Download, FileText, File as FileIcon, Loader2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Switch } from './ui/switch';
@@ -106,9 +107,11 @@ export function JwtTool({ mode }: JwtToolProps) {
         
         setOutput(jwe);
         toast.success('Slow-mode JWT encryption complete!');
-    } catch (e: any) {
-        toast.error(e.message || 'JWT encryption failed.');
+        trackEvent({ name: "jwt_operation", params: { operation: "sign" } });
+    } catch (e: unknown) {
+        toast.error(e instanceof Error ? e.message : 'JWT encryption failed.');
         setVisualizationSteps(prev => prev.map(s => ({...s, status: 'done', data: s.data || 'Error!'})));
+        trackEvent({ name: "jwt_failed", params: { operation: "sign", error: sanitizeError(e) } });
     } finally {
         setIsProcessing(false);
     }
@@ -161,10 +164,12 @@ export function JwtTool({ mode }: JwtToolProps) {
         setVisualizationSteps(prev => prev.map((s, i) => i === 3 ? { ...s, status: 'done', data: result } : s));
         setOutput(result);
         toast.success('Slow-mode JWT decryption complete!');
+        trackEvent({ name: "jwt_operation", params: { operation: "verify" } });
 
-    } catch (e: any) {
-        toast.error(e.message || 'JWT decryption failed.');
+    } catch (e: unknown) {
+        toast.error(e instanceof Error ? e.message : 'JWT decryption failed.');
         setVisualizationSteps(prev => prev.map(s => ({...s, status: 'done', data: s.data || 'Error!'})));
+        trackEvent({ name: "jwt_failed", params: { operation: "verify", error: sanitizeError(e) } });
     } finally {
         setIsProcessing(false);
     }
@@ -200,9 +205,11 @@ export function JwtTool({ mode }: JwtToolProps) {
       
       setOutput(jwe);
       toast.success('Payload encrypted successfully as JWT!');
-    } catch (error: any) {
-      toast.error(error.message || 'JWT encryption failed.');
+      trackEvent({ name: "jwt_operation", params: { operation: "sign" } });
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'JWT encryption failed.');
       setOutput('');
+      trackEvent({ name: "jwt_failed", params: { operation: "sign", error: sanitizeError(error) } });
     } finally {
       setIsProcessing(false);
     }
@@ -226,9 +233,11 @@ export function JwtTool({ mode }: JwtToolProps) {
       const { payload } = await jwtDecrypt(input, derivedKey);
       setOutput(JSON.stringify(payload, null, 2));
       toast.success('JWT decrypted successfully!');
-    } catch (error: any) {
-      toast.error(error.message || 'JWT decryption failed.');
+      trackEvent({ name: "jwt_operation", params: { operation: "verify" } });
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'JWT decryption failed.');
       setOutput('');
+      trackEvent({ name: "jwt_failed", params: { operation: "verify", error: sanitizeError(error) } });
     } finally {
       setIsProcessing(false);
     }
@@ -241,6 +250,7 @@ export function JwtTool({ mode }: JwtToolProps) {
     }
     navigator.clipboard.writeText(output);
     toast.success('Result copied to clipboard!');
+    trackEvent({ name: "result_copied", params: { tool: "jwt" } });
   };
 
   const handleDownload = () => {

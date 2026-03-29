@@ -8,6 +8,22 @@ import { DigitalSignatureTool } from "./DigitalSignatureTool";
 import { RsaEncryptionTool } from "./RsaEncryptionTool";
 import { Lock, Unlock, Image as ImageIcon, ShieldCheck, KeyRound, FileJson, Signature, Hash } from "lucide-react";
 import { ImageCipherTool } from "./ImageCipherTool";
+import { trackEvent, type AnalyticsEvent } from "@/lib/googleAnalytics";
+
+type ToolParam = Extract<AnalyticsEvent, { name: "tool_switched" }>["params"]["tool"];
+
+const TAB_TO_TOOL: Record<string, ToolParam> = {
+  images: "image",
+  ciphers: "cipher",
+  signatures: "signature",
+  hashing: "hash",
+  rsa: "rsa",
+  jwt: "jwt",
+};
+
+function toToolParam(tabValue: string): ToolParam {
+  return TAB_TO_TOOL[tabValue] ?? (tabValue as ToolParam);
+}
 
 export function DeencryptHub() {
   const level2TabsList = "flex h-auto flex-wrap items-center justify-start gap-4 rounded-none border-b bg-transparent p-0";
@@ -28,7 +44,13 @@ export function DeencryptHub() {
 
           {/* Encryption / Signing Tools */}
           <TabsContent value="encrypt">
-            <Tabs defaultValue="images" className="w-full pt-4">
+            <Tabs
+              defaultValue="images"
+              className="w-full pt-4"
+              onValueChange={(value) =>
+                trackEvent({ name: "tool_switched", params: { tool: toToolParam(value) } })
+              }
+            >
               <TabsList className={level2TabsList}>
                 <TabsTrigger value="images" className={level2TabsTrigger}><ImageIcon className="mr-2 h-4 w-4"/>Images</TabsTrigger>
                 <TabsTrigger value="ciphers" className={level2TabsTrigger}><ShieldCheck className="mr-2 h-4 w-4"/>Ciphers</TabsTrigger>
@@ -48,7 +70,13 @@ export function DeencryptHub() {
 
           {/* Decryption / Verification Tools */}
           <TabsContent value="decrypt">
-            <Tabs defaultValue="images" className="w-full pt-4">
+            <Tabs
+              defaultValue="images"
+              className="w-full pt-4"
+              onValueChange={(value) =>
+                trackEvent({ name: "tool_switched", params: { tool: toToolParam(value) } })
+              }
+            >
               <TabsList className={level2TabsList}>
                 <TabsTrigger value="images" className={level2TabsTrigger}><ImageIcon className="mr-2 h-4 w-4"/>Images</TabsTrigger>
                 <TabsTrigger value="ciphers" className={level2TabsTrigger}><ShieldCheck className="mr-2 h-4 w-4"/>Ciphers</TabsTrigger>

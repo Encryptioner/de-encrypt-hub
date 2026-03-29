@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { type Algorithm } from '@/lib/crypto';
 import type { VisualizationStep } from './cipher-types';
 import { useCipherProcessor } from './useCipherProcessor';
+import { trackEvent } from '@/lib/googleAnalytics';
 
 export type { Algorithm, VisualizationStep };
 
@@ -96,6 +97,7 @@ export function useCipher({ mode }: UseCipherProps) {
     }
     navigator.clipboard.writeText(output);
     toast.success('Result copied to clipboard!');
+    trackEvent({ name: "result_copied", params: { tool: "cipher" } });
   };
   
   return {

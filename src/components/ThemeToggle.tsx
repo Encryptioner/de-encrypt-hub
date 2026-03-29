@@ -2,12 +2,15 @@
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
 import { Button } from '@/components/ui/button';
+import { trackEvent } from '@/lib/googleAnalytics';
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
   const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    trackEvent({ name: "theme_toggled", params: { theme: newTheme } });
   };
 
   return (

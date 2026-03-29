@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { RsaKeyManager } from './rsa/RsaKeyManager';
 import { CipherVisualization } from '@/components/CipherVisualization';
+import { type VisualizationStep } from '@/hooks/useCipher';
 import { useRsa } from '@/hooks/useRsa';
 import content from '@/config/content.json';
 
@@ -89,7 +90,7 @@ interface FormProps {
   isProcessing: boolean;
   showSteps: boolean;
   setShowSteps: (val: boolean) => void;
-  visualizationSteps: any[]; // Re-using VisualizationStep type is tricky here
+  visualizationSteps: VisualizationStep[];
   handleAction: () => void;
   handleCopy: (text: string) => void;
   handleSwap: () => void;

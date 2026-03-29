@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { processImage, ImageAlgorithm } from '@/lib/imageEncryption';
 import { type VisualizationStep } from '@/hooks/useCipher';
+import { trackEvent, sanitizeError } from '@/lib/googleAnalytics';
 
 interface UseImageCipherProps {
   mode: 'encrypt' | 'decrypt';
@@ -14,6 +15,7 @@ export function useImageCipher({ mode }: UseImageCipherProps) {
   const [algorithm, setAlgorithm] = useState<ImageAlgorithm>('pixel-scramble');
   const [isProcessing, setIsProcessing] = useState(false);
   const [fileName, setFileName] = useState('');
+  const [fileSizeKb, setFileSizeKb] = useState(0);
   const [progress, setProgress] = useState(0);
   const [showSteps, setShowSteps] = useState(false);
   const [visualizationSteps, setVisualizationSteps] = useState<VisualizationStep[]>([]);
@@ -24,6 +26,7 @@ export function useImageCipher({ mode }: UseImageCipherProps) {
       return;
     }
     setFileName(file.name);
+    setFileSizeKb(Math.round(file.size / 1024));
     const reader = new FileReader();
     reader.onload = (e) => {
       setOriginalImage(e.target?.result as string);
@@ -120,9 +123,11 @@ export function useImageCipher({ mode }: UseImageCipherProps) {
       setVisualizationSteps(prev => prev.map((s, i) => i === 2 ? { ...s, status: 'done', data: finalImage } : s));
 
       toast.success(`Image ${mode}ion visualization complete!`);
-    } catch (error: any) {
-      toast.error(error.message || `Image ${mode}ion failed.`);
+      trackEvent({ name: "image_crypto_used", params: { mode, image_size_kb: fileSizeKb } });
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : `Image ${mode}ion failed.`);
       setProcessedImage(null);
+      trackEvent({ name: "image_crypto_failed", params: { mode, error: sanitizeError(error) } });
     } finally {
       setIsProcessing(false);
       setProgress(0);
@@ -186,10 +191,12 @@ export function useImageCipher({ mode }: UseImageCipherProps) {
         ctx.putImageData(finalImageData, 0, 0);
         setProcessedImage(canvas.toDataURL('image/png'));
         toast.success(`Image ${mode}ed successfully!`);
+        trackEvent({ name: "image_crypto_used", params: { mode, image_size_kb: fileSizeKb } });
 
-    } catch (error: any) {
-        toast.error(error.message || `Image ${mode}ion failed.`);
+    } catch (error: unknown) {
+        toast.error(error instanceof Error ? error.message : `Image ${mode}ion failed.`);
         setProcessedImage(null);
+        trackEvent({ name: "image_crypto_failed", params: { mode, error: sanitizeError(error) } });
     } finally {
         setIsProcessing(false);
         setProgress(0);

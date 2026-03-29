@@ -1,38 +1,31 @@
 /**
- * Google Analytics 4 Integration
- * Privacy-first analytics implementation with environment-based tracking
+ * Typed Google Analytics event tracking service.
+ *
+ * Pure TypeScript module — no React imports. Safe to import from any file
+ * including contexts, services, hooks, and components.
+ *
+ * Uses raw window.gtag (no react-ga4 wrapper) for consistency with CloudNest pattern.
  */
 
-import ReactGA from 'react-ga4';
+// ── Configuration ────────────────────────────────────────────
 
-/**
- * Google Analytics Configuration
- */
-export const GOOGLE_ANALYTICS_CONFIG = {
+const GA_CONFIG = {
+  measurementId: 'G-Z629QFCJ9Z',
+
   /**
-   * Your Google Analytics 4 Measurement ID
-   * Get it from: https://analytics.google.com/ > Admin > Data Streams
+   * Enable/disable Google Analytics.
+   * Privacy-first: disabled by default.
    */
-  measurementId: 'G-Z629QFCJ9Z', // Replace with your GA4 Measurement ID
+  enabled: false,
 
   /**
-   * Enable/disable Google Analytics
-   * Privacy-first: disabled by default
-   */
-  enabled: false, // Set to true when you add your measurement ID
-
-  /**
-   * Track in development environment
-   * Set to true if you want to test analytics locally
+   * Track in development environment.
+   * Set to true if you want to test analytics locally.
    */
   trackInDevelopment: false,
 
-  /**
-   * Determine if tracking should be active
-   */
   get shouldTrack(): boolean {
     if (!this.enabled) return false;
-    if (!this.measurementId || this.measurementId === 'G-Z629QFCJ9Z') return false;
 
     const isProduction = import.meta.env.MODE === 'production';
     if (!isProduction && !this.trackInDevelopment) return false;
@@ -41,109 +34,107 @@ export const GOOGLE_ANALYTICS_CONFIG = {
   },
 };
 
-/**
- * Initialize Google Analytics
- * Call this once at app startup
- */
-export const initializeGA = (): void => {
-  if (!GOOGLE_ANALYTICS_CONFIG.shouldTrack) {
-    console.log('[Google Analytics] Tracking disabled');
-    return;
-  }
+// ── Event taxonomy ───────────────────────────────────────────
 
-  try {
-    ReactGA.initialize(GOOGLE_ANALYTICS_CONFIG.measurementId, {
-      gaOptions: {
-        siteSpeedSampleRate: 100,
-      },
-    });
+type CryptoEvent =
+  | { name: "cipher_used"; params: { algorithm: "aes" | "des" | "triple_des" | "rabbit" | "rc4"; mode: "encrypt" | "decrypt" } }
+  | { name: "cipher_failed"; params: { algorithm: "aes" | "des" | "triple_des" | "rabbit" | "rc4"; mode: "encrypt" | "decrypt"; error: string } }
+  | { name: "hash_generated"; params: { algorithm: "md5" | "sha1" | "sha256" | "sha512" } }
+  | { name: "hash_failed"; params: { algorithm: string; error: string } };
 
-    console.log('[Google Analytics] Initialized successfully with ID:', GOOGLE_ANALYTICS_CONFIG.measurementId);
+type RSAEvent =
+  | { name: "rsa_key_generated"; params: { key_size: number } }
+  | { name: "rsa_operation"; params: { operation: "encrypt" | "decrypt" } }
+  | { name: "rsa_failed"; params: { operation: "encrypt" | "decrypt" | "keygen"; error: string } };
 
-    // Track initial page view
-    trackPageView(window.location.pathname + window.location.search);
-  } catch (error) {
-    console.error('[Google Analytics] Initialization failed:', error);
-  }
+type SignatureEvent =
+  | { name: "signature_operation"; params: { algorithm: "rsa_pss" | "ed25519"; operation: "sign" | "verify" } }
+  | { name: "signature_failed"; params: { algorithm: string; operation: string; error: string } };
+
+type ImageCryptoEvent =
+  | { name: "image_crypto_used"; params: { mode: "encrypt" | "decrypt"; image_size_kb: number } }
+  | { name: "image_crypto_failed"; params: { mode: "encrypt" | "decrypt"; error: string } };
+
+type JWTEvent =
+  | { name: "jwt_operation"; params: { operation: "sign" | "verify" } }
+  | { name: "jwt_failed"; params: { operation: "sign" | "verify"; error: string } };
+
+type UIEvent =
+  | { name: "tool_switched"; params: { tool: "cipher" | "rsa" | "signature" | "hash" | "image" | "jwt" } }
+  | { name: "result_copied"; params: { tool: string } }
+  | { name: "theme_toggled"; params: { theme: "dark" | "light" } };
+
+type ErrorEvent = {
+  name: "error_occurred";
+  params: { category: string; action: string; error: string };
 };
 
-/**
- * Track a custom event
- * @param category - Event category (e.g., 'Encryption', 'Hashing')
- * @param action - Event action (e.g., 'Encrypt Text', 'Hash MD5')
- * @param label - Optional event label for additional context
- * @param value - Optional numeric value
- */
-export const trackEvent = (
-  category: string,
-  action: string,
-  label?: string,
-  value?: number
-): void => {
-  if (!GOOGLE_ANALYTICS_CONFIG.shouldTrack) return;
+export type AnalyticsEvent =
+  | CryptoEvent
+  | RSAEvent
+  | SignatureEvent
+  | ImageCryptoEvent
+  | JWTEvent
+  | UIEvent
+  | ErrorEvent;
 
-  try {
-    ReactGA.event({
-      category,
-      action,
-      label,
-      value,
-    });
-
-    console.log('[Google Analytics] Event tracked:', { category, action, label, value });
-  } catch (error) {
-    console.error('[Google Analytics] Event tracking failed:', error);
-  }
-};
+// ── Core tracking function ───────────────────────────────────
 
 /**
- * Track a page view
- * @param path - Page path (e.g., '/encryption', '/hashing')
- * @param title - Optional page title
+ * Send a typed analytics event to Google Analytics.
+ * No-ops gracefully when gtag is unavailable (SSR, ad blockers) or tracking is disabled.
  */
-export const trackPageView = (path: string, title?: string): void => {
-  if (!GOOGLE_ANALYTICS_CONFIG.shouldTrack) return;
+export function trackEvent(event: AnalyticsEvent): void {
+  if (!GA_CONFIG.shouldTrack) return;
+  if (typeof window === "undefined" || !window.gtag) return;
 
-  try {
-    ReactGA.send({ hitType: 'pageview', page: path, title });
+  const { name, ...rest } = event;
+  const params = "params" in rest ? rest.params : undefined;
+  window.gtag("event", name, params);
+}
 
-    console.log('[Google Analytics] Page view tracked:', path);
-  } catch (error) {
-    console.error('[Google Analytics] Page view tracking failed:', error);
-  }
-};
+// ── Helpers ──────────────────────────────────────────────────
+
+const EMAIL_PATTERN = /[\w.+-]+@[\w.-]+\.\w+/g;
 
 /**
- * Track encryption operation
+ * Strip email addresses from error messages to prevent PII leakage.
+ * Accepts unknown (catch variable) or string.
+ * Truncates to 100 characters.
  */
-export const trackEncryption = (algorithm: string, mode: 'encrypt' | 'decrypt'): void => {
-  trackEvent('Encryption', `${mode} - ${algorithm}`, algorithm);
-};
+export function sanitizeError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.replace(EMAIL_PATTERN, "[email]").slice(0, 100);
+}
 
 /**
- * Track hashing operation
+ * Map internal Algorithm type (AES, DES, TripleDES, Rabbit, RC4) to GA-friendly lowercase value.
  */
-export const trackHashing = (algorithm: string): void => {
-  trackEvent('Hashing', 'Generate Hash', algorithm);
-};
+export function toCipherAlgorithmParam(
+  algorithm: string
+): "aes" | "des" | "triple_des" | "rabbit" | "rc4" {
+  const map: Record<string, "aes" | "des" | "triple_des" | "rabbit" | "rc4"> = {
+    AES: "aes",
+    DES: "des",
+    TripleDES: "triple_des",
+    Rabbit: "rabbit",
+    RC4: "rc4",
+    RC4Drop: "rc4",
+  };
+  return map[algorithm] ?? "aes";
+}
 
 /**
- * Track RSA operation
+ * Map internal HashAlgorithm type (SHA-256, SHA-512, SHA-1, MD5) to GA-friendly lowercase value.
  */
-export const trackRSA = (operation: 'generate' | 'encrypt' | 'decrypt' | 'sign' | 'verify'): void => {
-  trackEvent('RSA', operation, operation);
-};
-
-/**
- * Track image encryption
- */
-export const trackImageEncryption = (mode: 'encrypt' | 'decrypt'): void => {
-  trackEvent('Image Encryption', mode, mode);
-};
-
-/**
- * Track JWT operation
- */
-export const trackJWT = (operation: 'sign' | 'verify'): void => {
-  trackEvent('JWT', operation, operation);
-};
+export function toHashAlgorithmParam(
+  algorithm: string
+): "md5" | "sha1" | "sha256" | "sha512" {
+  const map: Record<string, "md5" | "sha1" | "sha256" | "sha512"> = {
+    "SHA-256": "sha256",
+    "SHA-512": "sha512",
+    "SHA-1": "sha1",
+    "MD5": "md5",
+  };
+  return map[algorithm] ?? "sha256";
+}
