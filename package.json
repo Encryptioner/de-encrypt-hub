@@ -14,7 +14,17 @@
     "email": "mir.ankur.ruet13@gmail.com",
     "url": "https://encryptioner.github.io/"
   },
-  "keywords": ["encryption", "decryption", "cryptography", "security", "react", "typescript", "vite", "browser-based", "client-side"],
+  "keywords": [
+    "encryption",
+    "decryption",
+    "cryptography",
+    "security",
+    "react",
+    "typescript",
+    "vite",
+    "browser-based",
+    "client-side"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -95,5 +105,11 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "esbuild"
+    ]
   }
 }
